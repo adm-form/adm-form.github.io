@@ -1,0 +1,55 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * LES MARGES DE SÉCURITÉ, ET LE PIÈGE QU'ELLES PORTENT.
+ *
+ * `viewport-fit=cover` et la barre d'état translucide d'iOS donnent un vrai
+ * plein écran — et déplacent la responsabilité des marges sur le contenu. Sans
+ * ces règles, la barre du haut passe sous l'heure de l'iPad et la barre du bas
+ * sous la barre de gestes.
+ *
+ * ÉCRITES APRÈS `@tailwind utilities`, ELLES GAGNENT CONTRE `py-2` à
+ * spécificité égale : elles ne s'AJOUTENT pas à la marge de Tailwind, elles la
+ * REMPLACENT. La marge de base est donc dans le `calc()`, et les éléments
+ * concernés ne portent aucune classe Tailwind sur le même axe.
+ */
+.zone-sure-haut {
+  padding-top: calc(0.5rem + env(safe-area-inset-top));
+}
+
+.zone-sure-bas {
+  padding-bottom: calc(0.5rem + env(safe-area-inset-bottom));
+}
+
+/* En PAYSAGE — la posture d'une tablette tenue à deux mains — l'encoche est
+ * sur un CÔTÉ. */
+.cotes-surs {
+  padding-left: calc(0.75rem + env(safe-area-inset-left));
+  padding-right: calc(0.75rem + env(safe-area-inset-right));
+}
+
+/*
+ * ON REMPLIT CETTE FICHE AVEC UN GANT, SOUS LA PLUIE.
+ *
+ * 48 pixels est le minimum d'une cible tactile fiable ; en dessous, on
+ * manque le bouton et on choisit l'option voisine — c'est-à-dire qu'on
+ * enregistre une observation fausse sans le voir.
+ */
+.cible {
+  min-height: 3rem;
+}
+
+/* Un champ de saisie sous 16 px déclenche le zoom automatique de Safari, qui
+ * recadre la page au milieu de la frappe. */
+input,
+select,
+textarea {
+  font-size: 16px;
+}
+
+/* Le défilement d'une liste de points ne doit pas entraîner la page entière. */
+.liste-points {
+  overscroll-behavior: contain;
+}

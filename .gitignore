@@ -1,0 +1,10 @@
+node_modules/
+dist/
+*.local
+.DS_Store
+
+# Les réglages d'un poste (identifiant d'application Azure, lien du fichier)
+# n'ont rien à faire dans le dépôt : ils sont saisis dans l'écran Réglages et
+# gardés dans le navigateur de la tablette.
+.env
+.env.*

@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <!-- `viewport-fit=cover` : l'écran va sous l'encoche et les coins arrondis.
+         C'est ce qui donne un vrai plein écran — et c'est ce qui rend les
+         marges de sécurité obligatoires côté contenu (voir `index.css`).
+         `user-scalable=no` : un double-appui avec un gant ne doit pas zoomer
+         la page au milieu d'une saisie. -->
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
+    <title>Fiches Terrain — YUL / YMX</title>
+
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="theme-color" content="#0F766E" />
+    <link rel="icon" type="image/png" href="/favicon.png" />
+
+    <!-- iOS IGNORE LE MANIFESTE pour l'icône et le plein écran : sans ces
+         balises, « Ajouter à l'écran d'accueil » pose une capture de la page en
+         guise d'icône et rouvre Safari avec sa barre d'adresse. -->
+    <link rel="apple-touch-icon" href="/icone-192.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Fiches Terrain" />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

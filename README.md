@@ -19,7 +19,7 @@ npm run dev      # http://localhost:5174/
 Les trois autres commandes :
 
 ```bash
-npm test         # 106 essais
+npm test         # 112 essais
 npm run build    # produit dist/ (des fichiers statiques, à héberger n'importe où)
 npm run icones   # refait les icônes de l'application installée
 ```
@@ -183,9 +183,37 @@ possibles (le navigateur ne dit pas toujours pourquoi).
   « Sur l'écran d'accueil ».
 - **Android** : Chrome → menu → « Installer l'application ».
 
-Héberger `dist/` sur n'importe quel hébergeur statique (Vercel, Netlify,
-Azure Static Web Apps, un IIS interne…). **Ne pas oublier d'ajouter l'adresse
-retenue dans les URI de redirection de l'inscription Azure.**
+### Adresse de l'application (GitHub Pages)
+
+**https://mystraal.github.io/Fiches-terrain-ADM/** (la casse compte).
+
+1. Ouvrir cette adresse **une première fois avec du réseau**, et attendre que
+   la fiche s'affiche : c'est là que l'application se copie dans la tablette.
+2. Ajouter à l'écran d'accueil (iPad : Safari → Partager → « Sur l'écran
+   d'accueil » ; Android : Chrome → menu → « Installer l'application »).
+3. Ensuite, elle s'ouvre et fonctionne **sans réseau**.
+
+### Mettre à jour
+
+Chaque modification poussée sur la branche `main` est construite et publiée
+toute seule (onglet **Actions** du dépôt, ~2 minutes). Sur la tablette, il
+suffit d'ouvrir l'application **avec du réseau** : la nouvelle version
+s'installe en arrière-plan et s'applique à la **fermeture puis réouverture**
+de l'application. Les fiches saisies ne sont pas touchées par une mise à jour.
+
+### Exporter
+
+Écran **Envois** : **Exporter en CSV**, **Exporter en Excel** (.xlsx, fabriqué
+dans la tablette, sans réseau) ou **Partager** (feuille de partage de la
+tablette : courriel, Teams, OneDrive… avec le fichier joint ; si la tablette
+ne l'offre pas, le fichier est téléchargé à la place).
+
+### Autre hébergeur
+
+`VITE_BASE=/ npm run build` produit une version pour la racine d'un domaine.
+**Ne pas oublier d'ajouter l'adresse retenue dans les URI de redirection de
+l'inscription Azure** — sur GitHub Pages :
+`https://mystraal.github.io/Fiches-terrain-ADM/`, barre oblique finale comprise.
 
 ---
 
@@ -193,10 +221,10 @@ retenue dans les URI de redirection de l'inscription Azure.**
 
 | | |
 |---|---|
-| Ouvrir l'application | Oui — le service worker garde la coquille |
+| Ouvrir l'application | Oui — après une première ouverture en ligne, le service worker garde tous les fichiers |
 | Remplir et enregistrer | Oui — la fiche va dans la file d'attente locale |
 | Envoyer dans Excel | Non — l'envoi repart **tout seul** au retour du réseau |
-| Exporter en CSV | Oui |
+| Exporter en CSV / Excel, Partager | Oui |
 
 Rien n'est supprimé après l'envoi : la fiche reste visible dans l'écran
 **Envois**, avec son heure d'envoi, jusqu'à ce qu'on fasse le ménage soi-même.

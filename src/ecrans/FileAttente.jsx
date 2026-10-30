@@ -14,6 +14,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import * as fileAttente from "../donnees/file.js";
 import { resume } from "../fiche/regles.js";
 import { csv, nomDuFichier, telecharger } from "../donnees/csv.js";
+import { classeur, nomXlsx, partager, telechargerBlob } from "../donnees/xlsx.js";
 import { estRelie } from "../reglages.js";
 
 const BOUTON = "cible px-4 rounded-xl font-semibold bg-teal-700 text-white active:bg-teal-800";
@@ -125,6 +126,29 @@ export default function FileAttente({
     setAvis(`${fiches.length} fiche(s) exportée(s) en CSV.`);
   };
 
+  // Excel (.xlsx) fabriqué dans le navigateur, puis téléchargé ou partagé.
+  const exporterXlsx = async (partageAuSysteme) => {
+    if (!fiches.length) return;
+    try {
+      const nom = nomXlsx(nomDuFichier());
+      const blob = await classeur(fiches, reglages);
+      if (partageAuSysteme) {
+        const r = await partager(blob, nom);
+        if (r === "annule") return;
+        setAvis(
+          r === "partage"
+            ? `${fiches.length} fiche(s) partagée(s) en Excel.`
+            : `${fiches.length} fiche(s) téléchargée(s) en Excel (le partage n'est pas offert ici).`
+        );
+      } else {
+        telechargerBlob(blob, nom);
+        setAvis(`${fiches.length} fiche(s) exportée(s) en Excel.`);
+      }
+    } catch (e) {
+      setAvis(`L'export Excel a échoué : ${e?.message || e}`);
+    }
+  };
+
   const nettoyer = async () => {
     const envoyees = fiches.filter((f) => f.etat === fileAttente.ENVOYEE).length;
     if (!envoyees) return;
@@ -163,6 +187,12 @@ export default function FileAttente({
           </button>
           <button type="button" className={BOUTON_PALE} onClick={exporter} disabled={!fiches.length}>
             Exporter en CSV
+          </button>
+          <button type="button" className={BOUTON_PALE} onClick={() => exporterXlsx(false)} disabled={!fiches.length}>
+            Exporter en Excel
+          </button>
+          <button type="button" className={BOUTON_PALE} onClick={() => exporterXlsx(true)} disabled={!fiches.length}>
+            Partager
           </button>
           <button
             type="button"

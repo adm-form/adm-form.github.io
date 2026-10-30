@@ -25,22 +25,24 @@ export function echapper(valeur) {
   return texte;
 }
 
-export function csv(fiches, reglages = {}) {
+// Les colonnes et les valeurs, partagées par le CSV et le .xlsx (xlsx.js).
+export function tableau(fiches, reglages = {}) {
   const colonnes = TOUTES_COLONNES.filter((c) => ENTETES_DEFAUT.includes(c.entete));
-  const lignes = [colonnes.map((c) => echapper(c.entete)).join(SEPARATEUR)];
-  for (const fiche of fiches) {
-    lignes.push(
-      colonnes
-        .map((c) => {
-          const v = c.valeur
-            ? c.valeur(fiche, reglages)
-            : fiche.valeurs?.[c.code] ?? "";
-          return echapper(Array.isArray(v) ? v.join(", ") : v);
-        })
-        .join(SEPARATEUR)
-    );
-  }
-  return `﻿${lignes.join("\r\n")}\r\n`;
+  return {
+    entetes: colonnes.map((c) => c.entete),
+    lignes: fiches.map((fiche) =>
+      colonnes.map((c) => {
+        const v = c.valeur ? c.valeur(fiche, reglages) : fiche.valeurs?.[c.code] ?? "";
+        return Array.isArray(v) ? v.join(", ") : v;
+      })
+    ),
+  };
+}
+
+export function csv(fiches, reglages = {}) {
+  const { entetes, lignes } = tableau(fiches, reglages);
+  const rangees = [entetes, ...lignes].map((l) => l.map(echapper).join(SEPARATEUR));
+  return `﻿${rangees.join("\r\n")}\r\n`;
 }
 
 export function nomDuFichier(maintenant = new Date()) {

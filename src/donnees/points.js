@@ -19,7 +19,7 @@ import livres from "./points_defaut.json";
 import { MATRICES } from "../fiche/schema.js";
 
 const CLE = "fiches-terrain:points";
-const METHODES = ["Perche", "Pompe péristaltique", "Manuelle"];
+const METHODES = ["Perche", "Pompe péristaltique", "Manuelle", "Système", "Inspection visuelle seulement"];
 
 export const AUTRE = "Autre";
 

@@ -28,6 +28,10 @@ export const ANALYSES = [
   "Coliformes fécaux",
   "SPFA",
   "BPC",
+  // CQ n'est pas une analyse : cocher « CQ » dit qu'un DUPLICATA a été prélevé
+  // à ce point (contrôle de qualité). Il vit dans la liste pour s'afficher, se
+  // cocher et s'écrire dans le fichier comme les autres cases.
+  "CQ",
 ];
 
 export const MATRICES = ["Surface", "Pluvial", "Sanitaire", "Boue"];
@@ -144,7 +148,7 @@ export const CHAMPS = [
     etiquette: "Méthode d'échantillonnage",
     section: "Échantillon",
     type: "choix",
-    options: ["Perche", "Pompe péristaltique", "Manuelle"],
+    options: ["Perche", "Pompe péristaltique", "Manuelle", "Système", "Inspection visuelle seulement"],
     obligatoire: true,
   },
 

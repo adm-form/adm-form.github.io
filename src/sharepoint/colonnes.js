@@ -174,7 +174,9 @@ export const COLONNES_ANALYSES = ANALYSES.map((nom) => ({
         ? ["Coliformes", "CF"]
         : nom === "Métaux"
           ? ["Metaux", "Métaux lourds"]
-          : [],
+          : nom === "CQ"
+            ? ["Duplicata", "Duplicata (CQ)", "Contrôle qualité", "Contrôle de qualité"]
+            : [],
   valeur: (f, reglages) =>
     (f.valeurs.analyses || []).includes(nom) ? reglages?.marqueAnalyse || "X" : "",
 }));

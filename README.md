@@ -31,7 +31,7 @@ npm run icones   # refait les icônes de l'application installée
 - **La fiche** : aéroport (YUL / YMX), type de campagne, technicien, date,
   heure, point d'échantillonnage, matrice, méthode, turbidité, couleur et son
   intensité, odeur et sa nature, sédiments, débit, température, oxygène dissous
-  (% et mg/L), pH, les treize analyses, et des remarques.
+  (% et mg/L), pH, les analyses, la case « CQ » (duplicata prélevé) et des remarques.
 - **Ce qui se remplit tout seul** :
   - choisir **YUL** passe les quatre paramètres physico-chimiques à « - »
     (non mesuré) ; **YMX** les laisse à saisir ;
@@ -141,7 +141,7 @@ Deux cas :
   plage et faire **Insertion > Tableau** (en cochant « Mon tableau comporte des
   en-têtes »). L'application reconnaîtra les colonnes par leur titre.
 - **Le fichier est vide** : l'écran Réglages propose de créer le tableau et ses
-  36 colonnes sur une feuille vide. Une feuille qui contient déjà quelque chose
+  35 colonnes sur une feuille vide. Une feuille qui contient déjà quelque chose
   est **refusée** — écrire nos en-têtes par-dessus effacerait son contenu.
 
 **L'application écrit dans VOS colonnes, pas dans les siennes.** Elle lit la

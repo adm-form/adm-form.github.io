@@ -47,7 +47,7 @@ npm run icones   # régénère les PNG de public/ (aucune dépendance)
 - **La fiche est complète** et conforme à la demande du 2026-10-02 : aéroport,
   campagne, technicien, date, heure, point, matrice, méthode, turbidité,
   couleur + intensité, odeur + nature, sédiments, débit, température, O₂ (%),
-  O₂ (mg/L), pH, 13 analyses, remarques.
+  O₂ (mg/L), pH, les analyses + case « CQ » (duplicata prélevé), remarques.
 - **Les 88 points sont livrés** (62 YUL, 26 YMX) dans l'ordre et à
   l'orthographe fournis — **sans matrice** : elles s'attribuent dans l'écran
   Points. Voir « AUCUNE MATRICE N'EST DEVINÉE ».

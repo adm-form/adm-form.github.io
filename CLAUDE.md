@@ -35,7 +35,7 @@ simples. **Langue : tout en français** (interface, commentaires, documentation)
 
 ```
 npm run dev      # http://localhost:5174/  (5173 est pris par la maquette EDD)
-npm test         # 112 essais, ~2 s
+npm test         # 124 essais, ~2 s
 npm run build    # dist/ — des fichiers statiques
 npm run icones   # régénère les PNG de public/ (aucune dépendance)
 ```
@@ -47,11 +47,11 @@ npm run icones   # régénère les PNG de public/ (aucune dépendance)
 - **La fiche est complète** et conforme à la demande du 2026-10-02 : aéroport,
   campagne, technicien, date, heure, point, matrice, méthode, turbidité,
   couleur + intensité, odeur + nature, sédiments, débit, température, O₂ (%),
-  O₂ (mg/L), pH, les analyses + case « CQ » (duplicata prélevé), remarques.
+  O₂ (mg/L), pH, les analyses, « CQ » Oui/Non (duplicata prélevé), heure du prélèvement par le système (campagne intensive), remarques.
 - **Les 88 points sont livrés** (62 YUL, 26 YMX) dans l'ordre et à
   l'orthographe fournis — **sans matrice** : elles s'attribuent dans l'écran
   Points. Voir « AUCUNE MATRICE N'EST DEVINÉE ».
-- **112 essais verts**, dont 19 qui MONTENT les écrans dans jsdom.
+- **124 essais verts**, dont 19 qui MONTENT les écrans dans jsdom.
 - **Jamais essayé contre un vrai SharePoint** : l'inscription Azure et le lien
   du fichier n'existent pas encore. Toute la couche Graph est donc écrite mais
   non éprouvée en vrai — c'est la première chose à faire quand les

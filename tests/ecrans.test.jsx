@@ -107,6 +107,27 @@ describe("la fiche s'affiche et répond", () => {
     expect(screen.getAllByRole("button", { name: /F24G/ })).toHaveLength(6);
   });
 
+  it("ouvre « Heure du prélèvement par le système » seulement en campagne intensive", () => {
+    render(<Formulaire reglages={REGLAGES_DEFAUT} points={POINTS} />);
+    const titre = "Heure du prélèvement par le système";
+    expect(screen.queryByText(titre)).toBeNull();
+    fireEvent.click(boutonDe("campagne", "Intensif"));
+    const champ = screen.getByText(titre);
+    // Juste sous « Méthode d'échantillonnage » dans la fiche.
+    const methode = screen.getByText("Méthode d'échantillonnage");
+    expect(methode.compareDocumentPosition(champ) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    fireEvent.click(boutonDe("campagne", "Régulier"));
+    expect(screen.queryByText(titre)).toBeNull();
+  });
+
+  it("propose Bailer comme méthode et CQ en Oui / Non", () => {
+    render(<Formulaire reglages={REGLAGES_DEFAUT} points={POINTS} />);
+    expect(boutonDe("methode", "Bailer")).toBeTruthy();
+    fireEvent.click(boutonDe("cq", "Oui"));
+    expect(boutonDe("cq", "Oui").getAttribute("aria-pressed")).toBe("true");
+    expect(boutonDe("cq", "Non").getAttribute("aria-pressed")).toBe("false");
+  });
+
   it("ouvre le champ d'intensité SEULEMENT après une couleur, et le referme", () => {
     render(<Formulaire reglages={REGLAGES_DEFAUT} points={POINTS} />);
     expect(screen.queryByText("Intensité de la couleur")).toBeNull();
@@ -230,7 +251,19 @@ describe("l'écran des points", () => {
   });
 
   it("montre l'héritage d'un contrôle qualité plutôt que des boutons", () => {
-    render(<Points points={POINTS} surChangement={() => {}} />);
+    // Le point de base reçoit sa matrice ici même : l'essai ne dépend pas des
+    // valeurs livrées dans points_defaut.json.
+    const points = modifier(POINTS, "YUL", "B1", { matrice: "Pluvial" });
+    render(<Points points={points} surChangement={() => {}} />);
+    fireEvent.change(screen.getByPlaceholderText("Filtrer…"), { target: { value: "B1-CQ" } });
+    const ligne = screen.getByText("B1-CQ").closest("li");
+    expect(within(ligne).getByText(/hérite de B1 : Pluvial/)).toBeTruthy();
+    expect(within(ligne).queryByRole("button")).toBeNull();
+  });
+
+  it("dit qu'un contrôle qualité attend la matrice de son point de base", () => {
+    const points = modifier(POINTS, "YUL", "B1", { matrice: "", methode: "" });
+    render(<Points points={points} surChangement={() => {}} />);
     fireEvent.change(screen.getByPlaceholderText("Filtrer…"), { target: { value: "B1-CQ" } });
     const ligne = screen.getByText("B1-CQ").closest("li");
     expect(within(ligne).getByText(/contrôle qualité de B1/)).toBeTruthy();

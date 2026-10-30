@@ -28,10 +28,6 @@ export const ANALYSES = [
   "Coliformes fécaux",
   "SPFA",
   "BPC",
-  // CQ n'est pas une analyse : cocher « CQ » dit qu'un DUPLICATA a été prélevé
-  // à ce point (contrôle de qualité). Il vit dans la liste pour s'afficher, se
-  // cocher et s'écrire dans le fichier comme les autres cases.
-  "CQ",
 ];
 
 export const MATRICES = ["Surface", "Pluvial", "Sanitaire", "Boue"];
@@ -148,8 +144,17 @@ export const CHAMPS = [
     etiquette: "Méthode d'échantillonnage",
     section: "Échantillon",
     type: "choix",
-    options: ["Perche", "Pompe péristaltique", "Manuelle", "Système", "Inspection visuelle seulement"],
+    options: ["Perche", "Pompe péristaltique", "Manuelle", "Bailer", "Système", "Inspection visuelle seulement"],
     obligatoire: true,
+  },
+  {
+    // Campagne intensive seulement : le préleveur automatique (« système »)
+    // note l'heure de son propre prélèvement, distincte de l'heure de la fiche.
+    code: "heure_systeme",
+    etiquette: "Heure du prélèvement par le système",
+    section: "Échantillon",
+    type: "heure",
+    condition: (v) => v.campagne === "Intensif",
   },
 
   {
@@ -245,6 +250,14 @@ export const CHAMPS = [
     section: "Analyses",
     type: "multi",
     options: ANALYSES,
+  },
+  {
+    code: "cq",
+    etiquette: "CQ",
+    section: "Analyses",
+    type: "choix",
+    options: ["Oui", "Non"],
+    aide: "Un duplicata (contrôle de qualité) a-t-il été prélevé à ce point ?",
   },
   {
     code: "remarques",

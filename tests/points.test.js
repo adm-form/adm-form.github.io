@@ -6,6 +6,7 @@
  * DÉTRUIT jamais une attribution déjà faite.
  */
 import { describe, expect, it } from "vitest";
+import { MATRICES } from "../src/fiche/schema.js";
 import {
   ajouter,
   analyserListe,
@@ -22,7 +23,14 @@ import {
   valeursDuPoint,
 } from "../src/donnees/points.js";
 
-const livres = pointsLivres();
+const reelles = pointsLivres();
+
+// Les essais d'héritage et d'attribution partent de points VIERGES : la liste
+// livrée porte désormais les matrices et méthodes du professionnel, et un essai
+// qui en dépendrait casserait à chaque mise à jour de ces valeurs.
+const livres = Object.fromEntries(
+  Object.entries(reelles).map(([a, l]) => [a, l.map((p) => ({ id: p.id, matrice: "", methode: "" }))])
+);
 
 describe("les listes livrées", () => {
   it("portent 62 points à YUL et 26 à YMX", () => {
@@ -45,9 +53,19 @@ describe("les listes livrées", () => {
     expect(pointsDe(livres, "YMX").map((p) => p.id)).toContain("Sa1");
   });
 
-  it("n'inventent AUCUNE matrice", () => {
-    const avecMatrice = pointsDe(livres, "YUL").filter((p) => p.matrice);
-    expect(avecMatrice).toEqual([]);
+  it("ne portent que des matrices et des méthodes connues, ou vides", () => {
+    const METHODES = ["Perche", "Pompe péristaltique", "Manuelle", "Bailer", "Système", "Inspection visuelle seulement"];
+    for (const aeroport of ["YUL", "YMX"]) {
+      for (const p of pointsDe(reelles, aeroport)) {
+        expect([...MATRICES, ""], `${aeroport} ${p.id} : matrice`).toContain(p.matrice);
+        expect([...METHODES, ""], `${aeroport} ${p.id} : méthode`).toContain(p.methode);
+      }
+    }
+  });
+
+  it("ne donnent aucune matrice à un « -CQ » : il hérite de son point", () => {
+    const cq = pointsDe(reelles, "YUL").filter((p) => baseDuCQ(p.id));
+    expect(cq.filter((p) => p.matrice || p.methode)).toEqual([]);
   });
 });
 

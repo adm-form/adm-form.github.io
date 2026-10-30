@@ -20,7 +20,7 @@ import React, { useMemo, useState } from "react";
 import { MATRICES } from "../fiche/schema.js";
 import * as referentiel from "../donnees/points.js";
 
-const METHODES = ["Perche", "Pompe péristaltique", "Manuelle", "Système", "Inspection visuelle seulement"];
+const METHODES = ["Perche", "Pompe péristaltique", "Manuelle", "Bailer", "Système", "Inspection visuelle seulement"];
 const CARTE = "rounded-2xl bg-white border border-slate-200 p-4 mb-4";
 const BOUTON = "cible px-4 rounded-xl font-semibold bg-teal-700 text-white active:bg-teal-800";
 const BOUTON_PALE =

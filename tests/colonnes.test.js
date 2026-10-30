@@ -13,6 +13,7 @@ import {
   ENTETES_DEFAUT,
   champsSansColonne,
   colonnePourEntete,
+  TOUTES_COLONNES,
   controle,
   ligne,
   normaliser,
@@ -173,5 +174,30 @@ describe("le garde-fou du schéma", () => {
   it("la colonne unique d'analyses n'est PAS créée (une colonne par analyse se filtre)", () => {
     expect(ENTETES_DEFAUT).not.toContain("Analyses effectuées");
     expect(COLONNES.find((c) => c.code === "analyses").creer).toBe(false);
+  });
+});
+
+describe("les colonnes « CQ » et « Heure du prélèvement par le système »", () => {
+  const entetes = (f) => Object.fromEntries(TOUTES_COLONNES.map((c) => [c.entete, ligneDe(c, f)]));
+  const ligneDe = (c, f) => (c.valeur ? c.valeur(f, {}) : f.valeurs[c.code] ?? "");
+
+  it("écrivent Oui / Non et l'heure telle que saisie", () => {
+    const f = { ...FICHE, valeurs: { ...FICHE.valeurs, cq: "Non", heure_systeme: "14:30" } };
+    const r = entetes(f);
+    expect(r["CQ"]).toBe("Non");
+    expect(r["Heure du prélèvement par le système"]).toBe("14:30");
+  });
+
+  it("lisent l'ancienne case « CQ » des analyses comme « Oui »", () => {
+    const f = { ...FICHE, valeurs: { ...FICHE.valeurs, analyses: ["HP", "CQ"] } };
+    expect(entetes(f)["CQ"]).toBe("Oui");
+  });
+
+  it("ne sont plus une analyse", () => {
+    expect(ANALYSES).not.toContain("CQ");
+  });
+
+  it("reconnaissent « Duplicata » comme la colonne CQ", () => {
+    expect(colonnePourEntete("Duplicata").code).toBe("cq");
   });
 });

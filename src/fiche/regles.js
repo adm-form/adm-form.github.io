@@ -139,6 +139,10 @@ export function changer(etat, code, valeur, { valeursDuPoint = null } = {}) {
   // Les dépendances qui s'effacent. On retire aussi la marque « touché » :
   // le champ redevenu invisible ne doit pas garder le souvenir d'une saisie
   // qui ne s'applique plus.
+  if (code === "campagne" && valeur !== "Intensif" && !vide(suivant.valeurs.heure_systeme)) {
+    suivant.valeurs = { ...suivant.valeurs, heure_systeme: "" };
+    delete suivant.touches.heure_systeme;
+  }
   if (code === "couleur" && valeur === "Aucune") {
     suivant.valeurs = { ...suivant.valeurs, couleur_intensite: "" };
     delete suivant.touches.couleur_intensite;

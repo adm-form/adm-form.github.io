@@ -100,6 +100,11 @@ export const COLONNES = [
     entete: "Méthode d'échantillonnage",
     synonymes: ["Méthode", "Mode de prélèvement"],
   },
+  {
+    code: "heure_systeme",
+    entete: "Heure du prélèvement par le système",
+    synonymes: ["Heure système", "Heure du prélèvement système"],
+  },
   { code: "turbidite", entete: "Turbidité", synonymes: ["Apparence", "Limpidité"] },
   {
     code: "couleur",
@@ -152,6 +157,15 @@ export const COLONNES = [
  * viennent donc en fin de ligne, avec l'horodatage de saisie.
  */
 export const COLONNES_FIN = [
+  {
+    code: "cq",
+    entete: "CQ",
+    synonymes: ["Duplicata", "Duplicata (CQ)", "Contrôle qualité", "Contrôle de qualité"],
+    // Les fiches saisies quand « CQ » était une case des analyses la portent
+    // encore dans `analyses` : on les lit comme « Oui » plutôt que de perdre
+    // l'information.
+    valeur: (f) => f.valeurs.cq || ((f.valeurs.analyses || []).includes("CQ") ? "Oui" : ""),
+  },
   { code: "remarques", entete: "Remarques", synonymes: ["Commentaires", "Notes", "Observations"] },
   {
     code: "saisie_le",
@@ -174,9 +188,7 @@ export const COLONNES_ANALYSES = ANALYSES.map((nom) => ({
         ? ["Coliformes", "CF"]
         : nom === "Métaux"
           ? ["Metaux", "Métaux lourds"]
-          : nom === "CQ"
-            ? ["Duplicata", "Duplicata (CQ)", "Contrôle qualité", "Contrôle de qualité"]
-            : [],
+          : [],
   valeur: (f, reglages) =>
     (f.valeurs.analyses || []).includes(nom) ? reglages?.marqueAnalyse || "X" : "",
 }));

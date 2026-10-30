@@ -240,3 +240,32 @@ describe("le résumé relu dans la file d'attente", () => {
     expect(resume(etat.valeurs)).toBe("YMX · P3A · Pluvial — 2026-05-15 09:07");
   });
 });
+
+describe("l'heure du prélèvement par le système", () => {
+  it("n'existe que pour une campagne intensive", () => {
+    expect(visible("heure_systeme", etatNeuf().valeurs)).toBe(false);
+    const etat = changer(etatNeuf(), "campagne", "Intensif");
+    expect(visible("heure_systeme", etat.valeurs)).toBe(true);
+  });
+
+  it("s'efface quand la campagne n'est plus intensive", () => {
+    let etat = changer(etatNeuf(), "campagne", "Intensif");
+    etat = changer(etat, "heure_systeme", "14:30");
+    expect(etat.valeurs.heure_systeme).toBe("14:30");
+    etat = changer(etat, "campagne", "Spécial");
+    expect(etat.valeurs.heure_systeme).toBe("");
+  });
+
+  it("n'est jamais obligatoire", () => {
+    const etat = changer(etatNeuf(), "campagne", "Intensif");
+    expect(manquants(etat.valeurs).map((c) => c.code)).not.toContain("heure_systeme");
+  });
+});
+
+describe("CQ (duplicata prélevé)", () => {
+  it("est un choix Oui / Non, jamais obligatoire", () => {
+    const etat = changer(etatNeuf(), "cq", "Oui");
+    expect(etat.valeurs.cq).toBe("Oui");
+    expect(manquants(etatNeuf().valeurs).map((c) => c.code)).not.toContain("cq");
+  });
+});

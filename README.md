@@ -185,7 +185,7 @@ possibles (le navigateur ne dit pas toujours pourquoi).
 
 ### Adresse de l'application (GitHub Pages)
 
-**https://mystraal.github.io/Fiches-terrain-ADM/** (la casse compte).
+**https://adm-form.github.io/**
 
 1. Ouvrir cette adresse **une première fois avec du réseau**, et attendre que
    la fiche s'affiche : c'est là que l'application se copie dans la tablette.
@@ -210,10 +210,10 @@ ne l'offre pas, le fichier est téléchargé à la place).
 
 ### Autre hébergeur
 
-`VITE_BASE=/ npm run build` produit une version pour la racine d'un domaine.
+`VITE_BASE=/nom-du-depot/ npm run build` produit une version pour un dépôt Pages ordinaire (adresse avec sous-chemin).
 **Ne pas oublier d'ajouter l'adresse retenue dans les URI de redirection de
 l'inscription Azure** — sur GitHub Pages :
-`https://mystraal.github.io/Fiches-terrain-ADM/`, barre oblique finale comprise.
+`https://adm-form.github.io/`, barre oblique finale comprise.
 
 ---
 

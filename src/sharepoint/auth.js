@@ -56,7 +56,7 @@ export async function initialiser(reglages) {
     auth: {
       clientId: reglages.clientId,
       authority: `https://login.microsoftonline.com/${reglages.tenantId || "organizations"}`,
-      // BASE_URL : « / » en développement, « /Fiches-terrain-ADM/ » sur GitHub
+      // BASE_URL : « / » en développement comme sur GitHub
       // Pages. L'URI inscrite dans Azure doit correspondre au caractère près.
       redirectUri: `${window.location.origin}${import.meta.env.BASE_URL}`,
       navigateToLoginRequestUrl: true,

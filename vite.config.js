@@ -2,12 +2,13 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 
-// NOM DU DÉPÔT = CHEMIN DE BASE SUR GITHUB PAGES.
-// L'application est servie sous https://<compte>.github.io/Fiches-terrain-ADM/ :
-// tout chemin absolu (« /sw.js », « /icone-192.png ») pointerait à côté. La
-// casse compte. Si le dépôt est renommé, ce nom est la seule ligne à changer.
-// `VITE_BASE=/` permet une construction à la racine (autre hébergeur, essais).
-const BASE = process.env.VITE_BASE || '/Fiches-terrain-ADM/';
+// CHEMIN DE BASE : « / ». Le dépôt s'appelle `adm-form.github.io`, un dépôt
+// « site d'organisation » : GitHub Pages le sert À LA RACINE du domaine
+// (https://adm-form.github.io/), sans sous-chemin. Si l'application était un
+// jour déplacée dans un dépôt ordinaire (https://<compte>.github.io/<dépôt>/),
+// il faudrait `VITE_BASE=/<dépôt>/` : tout chemin absolu pointerait sinon à
+// côté, et la casse compte.
+const BASE = process.env.VITE_BASE || '/';
 
 // PORT 5174, ET CE N'EST PAS UN DÉTAIL : la maquette EDD occupe le 5173. Deux
 // applications sur le même port, c'est la première qui gagne et la seconde qui

@@ -28,6 +28,7 @@ export const ANALYSES = [
   "Coliformes fécaux",
   "SPFA",
   "BPC",
+  "Papier test huile",
 ];
 
 export const MATRICES = ["Surface", "Pluvial", "Sanitaire", "Boue"];
@@ -111,7 +112,6 @@ export const CHAMPS = [
     etiquette: "Heure",
     section: "Campagne",
     type: "heure",
-    obligatoire: true,
   },
 
   {
@@ -129,6 +129,14 @@ export const CHAMPS = [
     obligatoire: true,
     condition: (v) => v.point === "Autre",
     aide: "Le nom sera écrit tel quel dans le fichier.",
+  },
+  {
+    code: "nom_echantillon",
+    etiquette: "Nom de l'échantillon",
+    section: "Échantillon",
+    type: "texte",
+    lectureSeule: true,
+    aide: "Généré à partir du point et de la date d'échantillonnage.",
   },
   {
     code: "matrice",
@@ -162,13 +170,14 @@ export const CHAMPS = [
     etiquette: "Turbidité",
     section: "Observations",
     type: "choix",
-    options: ["Clair", "Trouble", "Opaque"],
+    options: ["Clair", "Légèrement trouble", "Trouble", "Opaque"],
   },
   {
     code: "couleur",
     etiquette: "Couleur de l'eau",
     section: "Observations",
-    type: "choix",
+    type: "multi",
+    maxChoix: 2,
     options: ["Aucune", "Jaunâtre", "Verdâtre", "Noirâtre", "Grisâtre", "Brunâtre"],
   },
   {
@@ -180,14 +189,18 @@ export const CHAMPS = [
     // Pas de couleur, pas d'intensité : une « intensité » sans couleur ne veut
     // rien dire, et laisser le champ ouvert ferait saisir une intensité qui
     // contredirait l'observation.
-    condition: (v) => !vide(v.couleur) && v.couleur !== "Aucune",
+    condition: (v) => {
+      const couleurs = Array.isArray(v.couleur) ? v.couleur : [v.couleur];
+      return couleurs.some((couleur) => couleur && couleur !== "Aucune");
+    },
   },
   {
     code: "odeur",
     etiquette: "Odeur",
     section: "Observations",
-    type: "choix",
-    options: ["Aucune", "Faible", "Moyenne", "Forte"],
+    type: "multi",
+    maxChoix: 2,
+    options: ["Aucune", "Très faible", "Faible", "Moyenne", "Forte"],
   },
   {
     code: "odeur_nature",
@@ -195,7 +208,10 @@ export const CHAMPS = [
     section: "Observations",
     type: "choix",
     options: ["Glycol", "Organique", "Minérale", "Hydrocarbures"],
-    condition: (v) => !vide(v.odeur) && v.odeur !== "Aucune",
+    condition: (v) => {
+      const odeurs = Array.isArray(v.odeur) ? v.odeur : [v.odeur];
+      return odeurs.some((odeur) => odeur && odeur !== "Aucune");
+    },
   },
   {
     code: "sediments",
@@ -257,7 +273,16 @@ export const CHAMPS = [
     section: "Analyses",
     type: "choix",
     options: ["Oui", "Non"],
+    defaut: "Non",
     aide: "Un duplicata (contrôle de qualité) a-t-il été prélevé à ce point ?",
+  },
+  {
+    code: "nom_cq",
+    etiquette: "Nom du CQ",
+    section: "Analyses",
+    type: "texte",
+    obligatoire: true,
+    condition: (v) => v.cq === "Oui",
   },
   {
     code: "remarques",

@@ -19,6 +19,8 @@ import Formulaire from "../src/fiche/Formulaire.jsx";
 import Points from "../src/ecrans/Points.jsx";
 import { REGLAGES_DEFAUT } from "../src/reglages.js";
 import { pointsLivres, modifier } from "../src/donnees/points.js";
+import * as fileAttente from "../src/donnees/file.js";
+import { envoyerTout } from "../src/sharepoint/envoi.js";
 
 const POINTS = modifier(
   modifier(pointsLivres(), "YUL", "RP-102", { matrice: "Pluvial", methode: "Perche" }),
@@ -150,6 +152,37 @@ describe("la fiche s'affiche et répond", () => {
     expect(boutonDe("odeur_nature", "Glycol")).toBeTruthy();
   });
 
+  it("calcule le nom d'échantillon B1B avec la date choisie", () => {
+    render(<Formulaire reglages={REGLAGES_DEFAUT} points={POINTS} />);
+    fireEvent.change(within(champ("date")).getByDisplayValue(/\d{4}-\d{2}-\d{2}/), {
+      target: { value: "2026-09-11" },
+    });
+    fireEvent.click(bouton("YUL"));
+    fireEvent.change(screen.getByPlaceholderText(/Filtrer parmi/), { target: { value: "B1B" } });
+    fireEvent.click(within(champ("point")).getByRole("button", { name: /^B1BPluvial/ }));
+    expect(within(champ("nom_echantillon")).getByDisplayValue("B1B-260911")).toBeTruthy();
+  });
+
+  it("demande le nom du CQ et limite odeur/couleur à deux choix", () => {
+    render(<Formulaire reglages={REGLAGES_DEFAUT} points={POINTS} />);
+    expect(champ("nom_cq")).toBeNull();
+    fireEvent.click(boutonDe("cq", "Oui"));
+    expect(champ("nom_cq")).toBeTruthy();
+    fireEvent.change(within(champ("nom_cq")).getByRole("textbox"), {
+      target: { value: "CQ terrain" },
+    });
+    fireEvent.click(boutonDe("odeur", "Très faible"));
+    fireEvent.click(boutonDe("odeur", "Forte"));
+    fireEvent.click(boutonDe("odeur", "Faible"));
+    expect(boutonDe("odeur", "Très faible").getAttribute("aria-pressed")).toBe("true");
+    expect(boutonDe("odeur", "Forte").getAttribute("aria-pressed")).toBe("true");
+    expect(boutonDe("odeur", "Faible").getAttribute("aria-pressed")).toBe("false");
+    fireEvent.click(boutonDe("couleur", "Jaunâtre"));
+    fireEvent.click(boutonDe("couleur", "Verdâtre"));
+    expect(boutonDe("couleur", "Jaunâtre").getAttribute("aria-pressed")).toBe("true");
+    expect(boutonDe("couleur", "Verdâtre").getAttribute("aria-pressed")).toBe("true");
+  });
+
   it("coche plusieurs analyses et les compte", () => {
     render(<Formulaire reglages={REGLAGES_DEFAUT} points={POINTS} />);
     fireEvent.click(bouton("HP"));
@@ -204,6 +237,18 @@ describe("la fiche s'affiche et répond", () => {
     expect(screen.getAllByPlaceholderText("non mesuré")).toHaveLength(4);
     // …et le point, la matrice et la méthode sont repartis à zéro.
     expect(screen.getByRole("button", { name: "Enregistrer — 3 champ(s) à remplir" })).toBeTruthy();
+    expect((await fileAttente.toutes())[0].etat).toBe(fileAttente.A_VERIFIER);
+  });
+
+  it("ne partage pas les nouvelles fiches avant validation manuelle", async () => {
+    await fileAttente.ajouter({
+      ...fileAttente.ficheNeuve({ aeroport: "YUL", point: "B1" }),
+      etat: fileAttente.A_VERIFIER,
+    });
+    const bilan = await envoyerTout(REGLAGES_DEFAUT);
+    expect(bilan.envoyees).toBe(0);
+    expect(bilan.message).toMatch(/à vérifier avant l’envoi/);
+    expect((await fileAttente.toutes())[0].etat).toBe(fileAttente.A_VERIFIER);
   });
 });
 

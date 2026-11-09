@@ -7,7 +7,16 @@
  * s'en aperçoit avant d'interpréter les résultats.
  */
 import { describe, expect, it } from "vitest";
-import { changer, etatNeuf, manquants, anomalies, nomDuPoint, resume, visible } from "../src/fiche/regles.js";
+import {
+  changer,
+  etatNeuf,
+  manquants,
+  anomalies,
+  nomDuPoint,
+  nomEchantillon,
+  resume,
+  visible,
+} from "../src/fiche/regles.js";
 import { NON_MESURE } from "../src/fiche/schema.js";
 
 const LE_15_MAI = new Date(2026, 4, 15, 9, 7);
@@ -20,6 +29,8 @@ describe("la fiche neuve", () => {
     expect(valeurs.date).toBe("2026-05-15");
     expect(valeurs.heure).toBe("09:07");
     expect(valeurs.analyses).toEqual([]);
+    expect(valeurs.nom_echantillon).toBe("");
+    expect(manquants(valeurs)).not.toContain("heure");
   });
 
   it("n'impose AUCUN aéroport : le deviner déciderait du « - » à notre place", () => {
@@ -88,7 +99,7 @@ describe("ce qui survit d'une fiche à l'autre", () => {
     etat = changer(etat, "turbidite", "Opaque");
     etat = changer(etat, "analyses", ["HP", "Glycol"]);
     const suivante = etatNeuf({ precedente: etat });
-    expect(suivante.valeurs.odeur).toBe("");
+    expect(suivante.valeurs.odeur).toEqual([]);
     expect(suivante.valeurs.odeur_nature).toBe("");
     expect(suivante.valeurs.turbidite).toBe("");
     expect(suivante.valeurs.analyses).toEqual([]);
@@ -147,6 +158,18 @@ describe("le point d'échantillonnage", () => {
     etat = changer(etat, "point", "B1");
     expect(etat.valeurs.point_autre).toBe("");
   });
+
+  it("génère le nom d'échantillon depuis le point et la date", () => {
+    let etat = changer(etatNeuf({ maintenant: LE_15_MAI }), "point", "B1B");
+    expect(etat.valeurs.nom_echantillon).toBe("B1B-260515");
+    etat = changer(etat, "date", "2026-09-11");
+    expect(etat.valeurs.nom_echantillon).toBe("B1B-260911");
+    etat = changer(etat, "point", "P3A");
+    expect(etat.valeurs.nom_echantillon).toBe("P3A");
+    expect(nomEchantillon({ point: "Autre", point_autre: "Regard", date: "2026-09-11" })).toBe(
+      "Regard"
+    );
+  });
 });
 
 describe("les dépendances d'affichage", () => {
@@ -173,6 +196,27 @@ describe("les dépendances d'affichage", () => {
     etat = changer(etat, "odeur_nature", "Hydrocarbures");
     etat = changer(etat, "odeur", "Aucune");
     expect(etat.valeurs.odeur_nature).toBe("");
+  });
+
+  it("n'affiche le nom du CQ et ne le réclame que pour Oui", () => {
+    let etat = etatNeuf();
+    expect(etat.valeurs.cq).toBe("Non");
+    expect(manquants(etat.valeurs)).not.toContain("nom_cq");
+    etat = changer(etat, "cq", "Oui");
+    expect(visible("nom_cq", etat.valeurs)).toBe(true);
+    expect(manquants(etat.valeurs)).toContain("nom_cq");
+    etat = changer(etat, "nom_cq", "CQ terrain");
+    etat = changer(etat, "cq", "Non");
+    expect(etat.valeurs.nom_cq).toBe("");
+    expect(visible("nom_cq", etat.valeurs)).toBe(false);
+  });
+
+  it("garde jusqu'à deux odeurs et couleurs", () => {
+    let etat = changer(etatNeuf(), "odeur", ["Très faible", "Forte"]);
+    etat = changer(etat, "couleur", ["Jaunâtre", "Verdâtre"]);
+    expect(etat.valeurs.odeur).toEqual(["Très faible", "Forte"]);
+    expect(etat.valeurs.couleur).toEqual(["Jaunâtre", "Verdâtre"]);
+    expect(visible("couleur_intensite", etat.valeurs)).toBe(true);
   });
 });
 

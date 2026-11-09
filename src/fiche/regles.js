@@ -61,6 +61,7 @@ export function etatNeuf({ precedente = null, maintenant = new Date() } = {}) {
   if (!vide(valeurs.aeroport)) {
     etat = { ...etat, ...appliquerAeroport(etat, valeurs.aeroport) };
   }
+  etat.valeurs.nom_echantillon = nomEchantillon(etat.valeurs);
   return etat;
 }
 
@@ -108,6 +109,9 @@ function appliquerPoint({ valeurs, touches, auto }, valeursDuPoint) {
  * rend éprouvable sans base ni navigateur.
  */
 export function changer(etat, code, valeur, { valeursDuPoint = null } = {}) {
+  if (code === "couleur" || code === "odeur") {
+    valeur = Array.isArray(valeur) ? valeur : valeur ? [valeur] : [];
+  }
   let suivant = {
     valeurs: { ...etat.valeurs, [code]: valeur },
     touches: { ...etat.touches, [code]: true },
@@ -143,15 +147,24 @@ export function changer(etat, code, valeur, { valeursDuPoint = null } = {}) {
     suivant.valeurs = { ...suivant.valeurs, heure_systeme: "" };
     delete suivant.touches.heure_systeme;
   }
-  if (code === "couleur" && valeur === "Aucune") {
+  if (code === "cq" && valeur !== "Oui") {
+    suivant.valeurs = { ...suivant.valeurs, nom_cq: "" };
+    delete suivant.touches.nom_cq;
+  }
+  const couleurs = Array.isArray(suivant.valeurs.couleur)
+    ? suivant.valeurs.couleur
+    : [suivant.valeurs.couleur];
+  if (code === "couleur" && !couleurs.some((couleur) => couleur && couleur !== "Aucune")) {
     suivant.valeurs = { ...suivant.valeurs, couleur_intensite: "" };
     delete suivant.touches.couleur_intensite;
   }
-  if (code === "odeur" && valeur === "Aucune") {
+  const odeurs = Array.isArray(suivant.valeurs.odeur) ? suivant.valeurs.odeur : [suivant.valeurs.odeur];
+  if (code === "odeur" && !odeurs.some((odeur) => odeur && odeur !== "Aucune")) {
     suivant.valeurs = { ...suivant.valeurs, odeur_nature: "" };
     delete suivant.touches.odeur_nature;
   }
 
+  suivant.valeurs = { ...suivant.valeurs, nom_echantillon: nomEchantillon(suivant.valeurs) };
   return suivant;
 }
 
@@ -217,6 +230,14 @@ export function anomalies(valeurs) {
 export function nomDuPoint(valeurs) {
   if (valeurs.point === "Autre") return String(valeurs.point_autre || "").trim();
   return valeurs.point || "";
+}
+
+export function nomEchantillon(valeurs) {
+  const point = nomDuPoint(valeurs);
+  if (!point) return "";
+  if (point !== "B1B") return point;
+  const date = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(valeurs.date || ""));
+  return date ? `B1B-${date[1].slice(-2)}${date[2]}${date[3]}` : "";
 }
 
 /* Une ligne de résumé pour la file d'attente — ce que le technicien relit. */

@@ -73,14 +73,21 @@ export function ChoixBoutons({ champ, valeur, auto, probleme, onChange }) {
 }
 
 export function ChoixMulti({ champ, valeur, probleme, onChange }) {
-  const choisies = Array.isArray(valeur) ? valeur : [];
+  const choisies = Array.isArray(valeur) ? valeur : valeur ? [valeur] : [];
   const basculer = (option) => {
     // L'ORDRE DES OPTIONS DU SCHÉMA EST CONSERVÉ, jamais l'ordre des appuis :
     // deux fiches avec les mêmes analyses doivent produire le même texte,
     // sinon le fichier Excel ne se trie ni ne se compte.
-    const suite = choisies.includes(option)
-      ? choisies.filter((c) => c !== option)
-      : champ.options.filter((o) => o === option || choisies.includes(o));
+    let suite;
+    if (choisies.includes(option)) {
+      suite = choisies.filter((c) => c !== option);
+    } else if (option === "Aucune") {
+      suite = [option];
+    } else {
+      const sansAucune = choisies.filter((c) => c !== "Aucune");
+      suite = champ.options.filter((o) => o === option || sansAucune.includes(o));
+      if (champ.maxChoix && suite.length > champ.maxChoix) return;
+    }
     onChange(suite);
   };
   return (
@@ -100,7 +107,15 @@ export function ChoixMulti({ champ, valeur, probleme, onChange }) {
         ))}
       </div>
       {choisies.length ? (
-        <p className="mt-2 text-xs text-slate-500">{choisies.length} analyse(s) : {choisies.join(", ")}</p>
+        <p className="mt-2 text-xs text-slate-500">
+          {champ.code === "analyses"
+            ? `${choisies.length} analyse(s) : `
+            : `${choisies.length} choix : `}
+          {choisies.join(", ")}
+        </p>
+      ) : null}
+      {champ.maxChoix ? (
+        <p className="mt-2 text-xs text-slate-500">Jusqu'à {champ.maxChoix} choix.</p>
       ) : null}
     </div>
   );
@@ -110,13 +125,22 @@ export function Texte({ champ, valeur, probleme, onChange, long = false }) {
   const commun = {
     value: valeur || "",
     onChange: (e) => onChange(e.target.value),
+    readOnly: champ.lectureSeule,
     className:
       "w-full rounded-xl border border-slate-300 px-3 py-3 bg-white text-slate-900 focus:border-teal-600 focus:outline-none",
   };
   return (
     <div>
       <Etiquette champ={champ} probleme={probleme} />
-      {long ? <textarea rows={3} {...commun} /> : <input type="text" {...commun} />}
+      {long ? (
+        <textarea rows={3} {...commun} />
+      ) : (
+        <input
+          type="text"
+          {...commun}
+          className={`${commun.className}${champ.lectureSeule ? " bg-slate-100" : ""}`}
+        />
+      )}
     </div>
   );
 }

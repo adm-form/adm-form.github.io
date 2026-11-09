@@ -22,6 +22,7 @@ const MAGASIN = "fiches";
 const CLE_SECOURS = "fiches-terrain:file";
 
 export const EN_ATTENTE = "en_attente";
+export const A_VERIFIER = "a_verifier";
 export const ENVOYEE = "envoyee";
 export const ERREUR = "erreur";
 

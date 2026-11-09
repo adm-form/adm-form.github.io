@@ -30,6 +30,7 @@ const ONGLETS = [
 
 export default function App() {
   const [page, setPage] = useState("fiche");
+  const [ficheEnEdition, setFicheEnEdition] = useState(null);
   const [reglages, setReglages] = useState(() => lireReglages());
   const [points, setPoints] = useState(() => referentiel.lire());
   const [attente, setAttente] = useState(0);
@@ -65,6 +66,16 @@ export default function App() {
     [reglages, compterAttente]
   );
 
+  const envoyerManuellement = useCallback(async () => {
+    const fiches = await fileAttente.toutes();
+    for (const fiche of fiches) {
+      if (fiche.etat === fileAttente.A_VERIFIER) {
+        await fileAttente.majFiche(fiche.id, { etat: fileAttente.EN_ATTENTE, erreur: "" });
+      }
+    }
+    await synchroniser();
+  }, [synchroniser]);
+
   // Au démarrage : consommer la réponse de la connexion Microsoft (elle revient
   // dans l'URL après la redirection), compter la file, et tenter un envoi.
   useEffect(() => {
@@ -91,8 +102,8 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // LE RETOUR DU RÉSEAU EST L'ÉVÉNEMENT QUI COMPTE : c'est là que la journée
-  // part dans le fichier, sans que personne n'ait à y penser.
+  // Le retour du réseau reprend les envois déjà autorisés ; les fiches à
+  // vérifier restent sur la tablette jusqu'à l'action manuelle.
   useEffect(() => {
     const monter = () => {
       setEnLigne(true);
@@ -138,7 +149,7 @@ export default function App() {
             ) : null}
             {attente > 0 ? (
               <span className="text-xs rounded-full bg-white text-teal-900 px-2 py-1 font-semibold">
-                {attente} en attente
+                {attente} à partager
               </span>
             ) : (
               <span className="text-xs rounded-full bg-teal-700 text-teal-50 px-2 py-1">à jour</span>
@@ -153,9 +164,17 @@ export default function App() {
           <Formulaire
             reglages={reglages}
             points={points}
+            ficheInitiale={ficheEnEdition}
+            surAnnulation={() => {
+              setFicheEnEdition(null);
+              setPage("file");
+            }}
             surEnregistrement={async () => {
               await compterAttente();
-              await synchroniser();
+              if (ficheEnEdition) {
+                setFicheEnEdition(null);
+                setPage("file");
+              }
             }}
           />
         ) : null}
@@ -165,7 +184,11 @@ export default function App() {
             enLigne={enLigne}
             envoiEnCours={envoiEnCours}
             dernierMessage={dernierMessage}
-            surEnvoi={synchroniser}
+            surEnvoi={envoyerManuellement}
+            surModification={(fiche) => {
+              setFicheEnEdition(fiche);
+              setPage("fiche");
+            }}
             surChangement={compterAttente}
           />
         ) : null}

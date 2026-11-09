@@ -31,6 +31,9 @@ const FICHE = {
     date: "2026-05-15",
     heure: "09:07",
     point: "P3A",
+    nom_echantillon: "P3A",
+    cq: "Oui",
+    nom_cq: "CQ terrain",
     matrice: "Pluvial",
     methode: "Perche",
     turbidite: "Trouble",
@@ -106,6 +109,18 @@ describe("la ligne écrite", () => {
 
   it("sait aussi écrire les analyses dans une colonne unique", () => {
     expect(ligne(["Analyses effectuées"], FICHE)).toEqual(["HP, Glycol"]);
+  });
+
+  it("écrit le nom d'échantillon et le nom du CQ", () => {
+    expect(ligne(["Nom de l'échantillon", "Nom du CQ"], FICHE)).toEqual(["P3A", "CQ terrain"]);
+  });
+
+  it("inclut Papier test huile parmi les analyses exportables", () => {
+    const fiche = {
+      ...FICHE,
+      valeurs: { ...FICHE.valeurs, analyses: ["Papier test huile"] },
+    };
+    expect(ligne(["Papier test huile"], fiche, { marqueAnalyse: "X" })).toEqual(["X"]);
   });
 
   it("écrit le nom du point, jamais le mot « Autre »", () => {

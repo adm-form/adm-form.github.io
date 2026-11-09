@@ -27,8 +27,14 @@ const PASTILLES = {
   [fileAttente.ERREUR]: ["bg-rose-100 text-rose-900", "échec"],
 };
 
-function Ligne({ fiche, surRenvoi, surSuppression }) {
-  const [couleur, texte] = PASTILLES[fiche.etat] || PASTILLES[fileAttente.EN_ATTENTE];
+function Ligne({ fiche, surRenvoi, surSuppression, surModification, envoiEnCours }) {
+  const [couleur, texte] =
+    fiche.etat === fileAttente.A_VERIFIER
+      ? ["bg-sky-100 text-sky-900", "à vérifier"]
+      : PASTILLES[fiche.etat] || PASTILLES[fileAttente.EN_ATTENTE];
+  const modifiable =
+    fiche.etat === fileAttente.A_VERIFIER ||
+    (fiche.etat === fileAttente.EN_ATTENTE && !fiche.tentatives);
   return (
     <li className="rounded-2xl bg-white border border-slate-200 p-3">
       <div className="flex items-start justify-between gap-3">
@@ -52,7 +58,17 @@ function Ligne({ fiche, surRenvoi, surSuppression }) {
         </span>
       </div>
       <div className="flex gap-2 mt-3">
-        {fiche.etat !== fileAttente.ENVOYEE ? (
+        {modifiable ? (
+          <button
+            type="button"
+            className={BOUTON_PALE + " text-sm"}
+            onClick={() => surModification(fiche)}
+            disabled={envoiEnCours}
+          >
+            Modifier
+          </button>
+        ) : null}
+        {fiche.etat !== fileAttente.ENVOYEE && fiche.etat !== fileAttente.A_VERIFIER ? (
           <button type="button" className={BOUTON_PALE + " text-sm"} onClick={() => surRenvoi(fiche)}>
             Remettre en attente
           </button>
@@ -75,6 +91,7 @@ export default function FileAttente({
   envoiEnCours,
   dernierMessage,
   surEnvoi,
+  surModification,
   surChangement,
 }) {
   const [fiches, setFiches] = useState([]);
@@ -158,19 +175,27 @@ export default function FileAttente({
   };
 
   const attente = fiches.filter((f) => f.etat !== fileAttente.ENVOYEE).length;
+  const aVerifier = fiches.filter((f) => f.etat === fileAttente.A_VERIFIER).length;
+  const enAttente = attente - aVerifier;
 
   return (
     <div className="pb-24">
       <div className="rounded-2xl bg-white border border-slate-200 p-4 mb-4">
         <p className="text-sm text-slate-700">
           {fiches.length
-            ? `${fiches.length} fiche(s) dans la tablette, dont ${attente} à envoyer.`
+            ? `${fiches.length} fiche(s) dans la tablette, dont ${aVerifier} à vérifier et ${enAttente} en attente d’envoi.`
             : "Aucune fiche enregistrée pour le moment."}
         </p>
+        {aVerifier ? (
+          <p className="mt-2 text-sm text-sky-900">
+            Les fiches « à vérifier » ne sont pas partagées avant l’appui sur « Envoyer maintenant ».
+          </p>
+        ) : null}
         {!estRelie(reglages) ? (
           <p className="mt-2 text-sm text-amber-800">
-            Le fichier Excel n'est pas encore relié : les fiches restent ici, en sécurité, et
-            partiront dès que la liaison sera faite (écran Réglages). L'export CSV reste possible.
+            Le fichier Excel n'est pas encore relié : les fiches restent ici. Relie le fichier dans
+            Réglages pour pouvoir les partager après vérification. Les exports CSV et Excel restent
+            possibles.
           </p>
         ) : null}
         {!enLigne ? <p className="mt-2 text-sm text-amber-800">Hors ligne.</p> : null}
@@ -209,7 +234,14 @@ export default function FileAttente({
         {[...fiches].reverse().map((fiche) => (
           // La plus RÉCENTE en haut : c'est celle qu'on vient de saisir, donc
           // celle qu'on veut relire. L'envoi, lui, respecte l'ordre de saisie.
-          <Ligne key={fiche.id} fiche={fiche} surRenvoi={renvoyer} surSuppression={supprimer} />
+          <Ligne
+            key={fiche.id}
+            fiche={fiche}
+            surRenvoi={renvoyer}
+            surSuppression={supprimer}
+            surModification={surModification}
+            envoiEnCours={envoiEnCours}
+          />
         ))}
       </ul>
     </div>

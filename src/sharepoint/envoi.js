@@ -58,6 +58,8 @@ async function dejaEcrite(contexte, idFiche) {
 }
 
 export async function envoyerUne(contexte, fiche) {
+  if (fiche.etat === fileAttente.A_VERIFIER) return { etat: "a_verifier" };
+
   if (fiche.tentatives > 0 && (await dejaEcrite(contexte, fiche.id))) {
     await fileAttente.majFiche(fiche.id, {
       etat: fileAttente.ENVOYEE,
@@ -105,8 +107,20 @@ export async function envoyerUne(contexte, fiche) {
  * doit pouvoir dire « 7 envoyées, arrêt faute de réseau » en une phrase.
  */
 export async function envoyerTout(reglages, { surAvancement = () => {} } = {}) {
-  const attente = (await fileAttente.enAttente()).filter((f) => f.etat !== fileAttente.ENVOYEE);
-  if (!attente.length) return { envoyees: 0, echecs: 0, restantes: 0, arret: null, message: "Rien à envoyer." };
+  const nonEnvoyees = await fileAttente.enAttente();
+  const attente = nonEnvoyees.filter(
+    (f) => f.etat !== fileAttente.ENVOYEE && f.etat !== fileAttente.A_VERIFIER
+  );
+  if (!attente.length) {
+    const aVerifier = nonEnvoyees.filter((f) => f.etat === fileAttente.A_VERIFIER).length;
+    return {
+      envoyees: 0,
+      echecs: 0,
+      restantes: 0,
+      arret: null,
+      message: aVerifier ? `${aVerifier} fiche(s) à vérifier avant l’envoi.` : "Rien à envoyer.",
+    };
+  }
 
   if (!estRelie(reglages)) {
     return {

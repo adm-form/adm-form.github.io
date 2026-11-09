@@ -94,6 +94,16 @@ export const COLONNES = [
     // point, jamais le mot « Autre ».
     valeur: (f) => nomDuPoint(f.valeurs),
   },
+  {
+    code: "nom_echantillon",
+    entete: "Nom de l'échantillon",
+    synonymes: ["Nom échantillon", "Échantillon", "Sample name"],
+  },
+  {
+    code: "nom_cq",
+    entete: "Nom du CQ",
+    synonymes: ["Nom CQ", "Échantillon CQ"],
+  },
   { code: "matrice", entete: "Matrice", synonymes: ["Type de matrice", "Réseau"] },
   {
     code: "methode",

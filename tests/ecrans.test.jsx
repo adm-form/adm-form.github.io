@@ -163,6 +163,21 @@ describe("la fiche s'affiche et répond", () => {
     expect(within(champ("nom_echantillon")).getByDisplayValue("B1B-260911")).toBeTruthy();
   });
 
+  it("permet de personnaliser le nom d'échantillon", () => {
+    render(<Formulaire reglages={REGLAGES_DEFAUT} points={POINTS} />);
+    fireEvent.click(bouton("YUL"));
+    fireEvent.change(screen.getByPlaceholderText(/Filtrer parmi/), { target: { value: "B1B" } });
+    fireEvent.click(within(champ("point")).getByRole("button", { name: /^B1BPluvial/ }));
+
+    const nom = within(champ("nom_echantillon")).getByDisplayValue(/^B1B-/);
+    fireEvent.change(nom, { target: { value: "B1B-duplicata" } });
+    fireEvent.change(within(champ("date")).getByDisplayValue(/\d{4}-\d{2}-\d{2}/), {
+      target: { value: "2026-09-11" },
+    });
+
+    expect(within(champ("nom_echantillon")).getByDisplayValue("B1B-duplicata")).toBeTruthy();
+  });
+
   it("demande le nom du CQ et limite odeur/couleur à deux choix", () => {
     render(<Formulaire reglages={REGLAGES_DEFAUT} points={POINTS} />);
     expect(champ("nom_cq")).toBeNull();

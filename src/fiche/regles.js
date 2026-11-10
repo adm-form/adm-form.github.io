@@ -164,7 +164,9 @@ export function changer(etat, code, valeur, { valeursDuPoint = null } = {}) {
     delete suivant.touches.odeur_nature;
   }
 
-  suivant.valeurs = { ...suivant.valeurs, nom_echantillon: nomEchantillon(suivant.valeurs) };
+  if (!suivant.touches.nom_echantillon) {
+    suivant.valeurs = { ...suivant.valeurs, nom_echantillon: nomEchantillon(suivant.valeurs) };
+  }
   return suivant;
 }
 

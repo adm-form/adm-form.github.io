@@ -68,11 +68,16 @@ function etatDepuisFiche(fiche, points) {
     valeurs.point_autre = valeurs.point_autre || valeurs.point;
     valeurs.point = AUTRE;
   }
-  valeurs.nom_echantillon = nomEchantillon(valeurs);
+  valeurs.nom_echantillon = valeurs.nom_echantillon || nomEchantillon(valeurs);
   const precedent = fiche.etatFormulaire;
   const touches =
     precedent?.touches ||
-    Object.fromEntries(CHAMPS.filter((champ) => valeurs[champ.code]).map((champ) => [champ.code, true]));
+    Object.fromEntries(
+      CHAMPS.filter((champ) => champ.code !== "nom_echantillon" && valeurs[champ.code]).map((champ) => [
+        champ.code,
+        true,
+      ])
+    );
   return { valeurs, touches, auto: precedent?.auto || {} };
 }
 

@@ -170,6 +170,14 @@ describe("le point d'échantillonnage", () => {
       "Regard"
     );
   });
+
+  it("conserve un nom d'échantillon personnalisé quand le point ou la date change", () => {
+    let etat = changer(etatNeuf({ maintenant: LE_15_MAI }), "point", "B1B");
+    etat = changer(etat, "nom_echantillon", "B1B-duplicata");
+    etat = changer(etat, "date", "2026-09-11");
+    etat = changer(etat, "point", "P3A");
+    expect(etat.valeurs.nom_echantillon).toBe("B1B-duplicata");
+  });
 });
 
 describe("les dépendances d'affichage", () => {

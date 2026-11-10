@@ -135,8 +135,7 @@ export const CHAMPS = [
     etiquette: "Nom de l'échantillon",
     section: "Échantillon",
     type: "texte",
-    lectureSeule: true,
-    aide: "Généré à partir du point et de la date d'échantillonnage.",
+    aide: "Généré à partir du point et de la date, mais modifiable au besoin.",
   },
   {
     code: "matrice",

@@ -16,8 +16,16 @@
  * défauts qu'on laisse traîner — alors qu'ils rendent le fichier inutilisable.
  */
 import { TOUTES_COLONNES, ENTETES_DEFAUT } from "../sharepoint/colonnes.js";
+import { CHAMPS } from "../fiche/schema.js";
 
 const SEPARATEUR = ";";
+const CODES_NOMBRE = new Set(CHAMPS.filter((c) => c.type === "nombre").map((c) => c.code));
+
+function decimaleAvecVirgule(valeur) {
+  if (typeof valeur === "number") return String(valeur).replace(".", ",");
+  if (typeof valeur !== "string" || !/^-?\d+[.,]\d+$/.test(valeur.trim())) return valeur;
+  return valeur.replace(".", ",");
+}
 
 export function echapper(valeur) {
   const texte = valeur === null || valeur === undefined ? "" : String(valeur);
@@ -30,10 +38,12 @@ export function tableau(fiches, reglages = {}) {
   const colonnes = TOUTES_COLONNES.filter((c) => ENTETES_DEFAUT.includes(c.entete));
   return {
     entetes: colonnes.map((c) => c.entete),
+    codes: colonnes.map((c) => c.code),
     lignes: fiches.map((fiche) =>
       colonnes.map((c) => {
         const v = c.valeur ? c.valeur(fiche, reglages) : fiche.valeurs?.[c.code] ?? "";
-        return Array.isArray(v) ? v.join(", ") : v;
+        const valeur = Array.isArray(v) ? v.join(", ") : v;
+        return CODES_NOMBRE.has(c.code) ? decimaleAvecVirgule(valeur) : valeur;
       })
     ),
   };
@@ -45,11 +55,24 @@ export function csv(fiches, reglages = {}) {
   return `﻿${rangees.join("\r\n")}\r\n`;
 }
 
-export function nomDuFichier(maintenant = new Date()) {
+export function nomDuFichier(maintenant = new Date(), aeroport = "") {
   const n = (x) => String(x).padStart(2, "0");
-  return `fiches-terrain-${maintenant.getFullYear()}${n(maintenant.getMonth() + 1)}${n(
+  const suffixeAeroport = aeroport ? `-${String(aeroport)}` : "";
+  return `fiches-terrain${suffixeAeroport}-${maintenant.getFullYear()}${n(maintenant.getMonth() + 1)}${n(
     maintenant.getDate()
   )}-${n(maintenant.getHours())}${n(maintenant.getMinutes())}.csv`;
+}
+
+export function repartirParAeroport(fiches) {
+  const groupes = new Map();
+  for (const fiche of fiches) {
+    const aeroport = ["YUL", "YMX"].includes(fiche.valeurs?.aeroport)
+      ? fiche.valeurs.aeroport
+      : "sans-aeroport";
+    if (!groupes.has(aeroport)) groupes.set(aeroport, []);
+    groupes.get(aeroport).push(fiche);
+  }
+  return [...groupes].map(([aeroport, liste]) => ({ aeroport, fiches: liste }));
 }
 
 export function telecharger(texte, nom) {

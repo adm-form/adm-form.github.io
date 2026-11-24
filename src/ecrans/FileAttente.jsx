@@ -13,8 +13,8 @@
 import React, { useCallback, useEffect, useState } from "react";
 import * as fileAttente from "../donnees/file.js";
 import { resume } from "../fiche/regles.js";
-import { csv, nomDuFichier, telecharger } from "../donnees/csv.js";
-import { classeur, nomXlsx, partager, telechargerBlob } from "../donnees/xlsx.js";
+import { csv, nomDuFichier, repartirParAeroport, telecharger } from "../donnees/csv.js";
+import { classeur, nomXlsx, partagerFichiers, telechargerBlob } from "../donnees/xlsx.js";
 import { estRelie } from "../reglages.js";
 
 const BOUTON = "cible px-4 rounded-xl font-semibold bg-teal-700 text-white active:bg-teal-800";
@@ -139,27 +139,45 @@ export default function FileAttente({
 
   const exporter = () => {
     if (!fiches.length) return;
-    telecharger(csv(fiches, reglages), nomDuFichier());
-    setAvis(`${fiches.length} fiche(s) exportée(s) en CSV.`);
+    const groupes = repartirParAeroport(fiches);
+    const maintenant = new Date();
+    groupes.forEach(({ aeroport, fiches: groupe }) =>
+      telecharger(csv(groupe, reglages), nomDuFichier(maintenant, aeroport))
+    );
+    setAvis(
+      `${fiches.length} fiche(s) exportée(s) en ${groupes.length} fichier(s) CSV (${groupes
+        .map((g) => g.aeroport)
+        .join(", ")}).`
+    );
   };
 
   // Excel (.xlsx) fabriqué dans le navigateur, puis téléchargé ou partagé.
   const exporterXlsx = async (partageAuSysteme) => {
     if (!fiches.length) return;
     try {
-      const nom = nomXlsx(nomDuFichier());
-      const blob = await classeur(fiches, reglages);
+      const groupes = repartirParAeroport(fiches);
+      const maintenant = new Date();
+      const fichiers = await Promise.all(
+        groupes.map(async ({ aeroport, fiches: groupe }) => {
+          const nom = nomXlsx(nomDuFichier(maintenant, aeroport));
+          return { blob: await classeur(groupe, reglages), nom };
+        })
+      );
       if (partageAuSysteme) {
-        const r = await partager(blob, nom);
+        const r = await partagerFichiers(fichiers);
         if (r === "annule") return;
         setAvis(
           r === "partage"
-            ? `${fiches.length} fiche(s) partagée(s) en Excel.`
-            : `${fiches.length} fiche(s) téléchargée(s) en Excel (le partage n'est pas offert ici).`
+            ? `${fiches.length} fiche(s) partagée(s) en ${fichiers.length} fichier(s) Excel.`
+            : `${fichiers.length} fichier(s) Excel téléchargé(s) (le partage n'est pas offert ici).`
         );
       } else {
-        telechargerBlob(blob, nom);
-        setAvis(`${fiches.length} fiche(s) exportée(s) en Excel.`);
+        fichiers.forEach(({ blob, nom }) => telechargerBlob(blob, nom));
+        setAvis(
+          `${fiches.length} fiche(s) exportée(s) en ${fichiers.length} fichier(s) Excel (${groupes
+            .map((g) => g.aeroport)
+            .join(", ")}).`
+        );
       }
     } catch (e) {
       setAvis(`L'export Excel a échoué : ${e?.message || e}`);

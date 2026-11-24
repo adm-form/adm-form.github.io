@@ -207,6 +207,10 @@ de l'application. Les fiches saisies ne sont pas touchées par une mise à jour.
 dans la tablette, sans réseau) ou **Partager** (feuille de partage de la
 tablette : courriel, Teams, OneDrive… avec le fichier joint ; si la tablette
 ne l'offre pas, le fichier est téléchargé à la place).
+Les exports sont séparés par aéroport (un fichier YUL et/ou YMX selon les
+fiches présentes). Le CSV utilise la virgule comme séparateur décimal; dans le
+classeur Excel, les mesures restent numériques et leur séparateur suit les
+paramètres régionaux d'Excel.
 
 ### Autre hébergeur
 

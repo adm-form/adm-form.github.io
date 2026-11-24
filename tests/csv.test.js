@@ -4,7 +4,7 @@
  * le point-virgule et le BOM.
  */
 import { describe, expect, it } from "vitest";
-import { csv, echapper, nomDuFichier } from "../src/donnees/csv.js";
+import { csv, echapper, nomDuFichier, repartirParAeroport } from "../src/donnees/csv.js";
 
 const FICHE = {
   id: "abc-123",
@@ -56,6 +56,16 @@ describe("le fichier produit", () => {
     expect(valeurs[colonnes.indexOf("pH")]).toBe("-");
   });
 
+  it("exporte les mesures décimales avec une virgule", () => {
+    const avecMesures = {
+      ...FICHE,
+      valeurs: { ...FICHE.valeurs, temperature: "12.5", ph: "7,25" },
+    };
+    const { colonnes, valeurs } = colonnesEtValeurs(avecMesures);
+    expect(valeurs[colonnes.indexOf("Température (°C)")]).toBe("12,5");
+    expect(valeurs[colonnes.indexOf("pH")]).toBe("7,25");
+  });
+
   it("protège un point-virgule contenu dans les remarques", () => {
     const avecPointVirgule = {
       ...FICHE,
@@ -86,5 +96,22 @@ describe("l'échappement", () => {
 describe("le nom du fichier", () => {
   it("porte la date et l'heure, pour que deux exports ne se recouvrent pas", () => {
     expect(nomDuFichier(new Date(2026, 4, 15, 9, 7))).toBe("fiches-terrain-20260515-0907.csv");
+    expect(nomDuFichier(new Date(2026, 4, 15, 9, 7), "YUL")).toBe(
+      "fiches-terrain-YUL-20260515-0907.csv"
+    );
+  });
+
+  it("sépare les fiches par aéroport sans perdre celles qui n'en ont pas", () => {
+    const groupes = repartirParAeroport([
+      FICHE,
+      { ...FICHE, id: "yul-2" },
+      { ...FICHE, id: "ymx-1", valeurs: { ...FICHE.valeurs, aeroport: "YMX" } },
+      { ...FICHE, id: "sans-aeroport", valeurs: {} },
+    ]);
+    expect(groupes.map(({ aeroport, fiches }) => [aeroport, fiches.map((f) => f.id)])).toEqual([
+      ["YUL", ["abc-123", "yul-2"]],
+      ["YMX", ["ymx-1"]],
+      ["sans-aeroport", ["sans-aeroport"]],
+    ]);
   });
 });

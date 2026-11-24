@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import ExcelJS from "exceljs";
 import { tableau } from "../src/donnees/csv.js";
-import { classeur, nomXlsx, partager, TYPE_XLSX } from "../src/donnees/xlsx.js";
+import { classeur, nomXlsx, partager, partagerFichiers, TYPE_XLSX } from "../src/donnees/xlsx.js";
 
 const FICHES = [
   { id: 1, valeurs: { aeroport: "YUL", point: "Pt-1", remarques: "a;b \"c\"" } },
@@ -23,6 +23,20 @@ describe("l'export Excel", () => {
 
   it("renomme .csv en .xlsx", () => {
     expect(nomXlsx("fiches-terrain-20261030-0900.csv")).toBe("fiches-terrain-20261030-0900.xlsx");
+  });
+
+  it("garde les mesures numériques et un format décimal régional", async () => {
+    const fiche = {
+      id: "decimal",
+      valeurs: { aeroport: "YUL", temperature: "12,5" },
+    };
+    const blob = await classeur([fiche], {});
+    const wb = new ExcelJS.Workbook();
+    await wb.xlsx.load(await blob.arrayBuffer());
+    const feuille = wb.worksheets[0];
+    const colonneTemperature = feuille.getRow(1).values.indexOf("Température (°C)");
+    expect(feuille.getCell(2, colonneTemperature).value).toBe(12.5);
+    expect(feuille.getColumn(colonneTemperature).numFmt).toBe("0.###############");
   });
 });
 
@@ -46,5 +60,21 @@ describe("le partage", () => {
       share: async () => { throw Object.assign(new Error("x"), { name: "AbortError" }); },
     });
     expect(await partager(new Blob(["x"]), "f.xlsx")).toBe("annule");
+  });
+
+  it("partage ensemble les fichiers de chaque aéroport", async () => {
+    let partage;
+    vi.stubGlobal("navigator", {
+      canShare: ({ files }) => files.length === 2,
+      share: async (contenu) => {
+        partage = contenu;
+      },
+    });
+    const r = await partagerFichiers([
+      { blob: new Blob(["yul"], { type: TYPE_XLSX }), nom: "YUL.xlsx" },
+      { blob: new Blob(["ymx"], { type: TYPE_XLSX }), nom: "YMX.xlsx" },
+    ]);
+    expect(r).toBe("partage");
+    expect(partage.files.map((f) => f.name)).toEqual(["YUL.xlsx", "YMX.xlsx"]);
   });
 });

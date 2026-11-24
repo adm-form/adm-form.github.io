@@ -16,6 +16,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import App from "../src/App.jsx";
 import Formulaire from "../src/fiche/Formulaire.jsx";
+import FileAttente from "../src/ecrans/FileAttente.jsx";
 import Points from "../src/ecrans/Points.jsx";
 import { REGLAGES_DEFAUT } from "../src/reglages.js";
 import { pointsLivres, modifier } from "../src/donnees/points.js";
@@ -39,6 +40,7 @@ beforeEach(() => {
 afterEach(() => {
   cleanup();
   vi.restoreAllMocks();
+  vi.unstubAllGlobals();
 });
 
 const bouton = (nom) => screen.getByRole("button", { name: nom });
@@ -335,5 +337,32 @@ describe("l'écran des points", () => {
     fireEvent.change(screen.getByPlaceholderText(/Nom du point à YUL/), { target: { value: "B1" } });
     fireEvent.click(screen.getByRole("button", { name: "Ajouter" }));
     expect(screen.getByText(/« B1 » est déjà dans la liste de YUL/)).toBeTruthy();
+  });
+});
+
+describe("l'export de la file d'attente", () => {
+  it("télécharge un fichier CSV distinct pour YUL et YMX", async () => {
+    await fileAttente.ajouter(fileAttente.ficheNeuve({ aeroport: "YUL", point: "B1" }));
+    await fileAttente.ajouter(fileAttente.ficheNeuve({ aeroport: "YMX", point: "P1B" }));
+
+    const telechargements = [];
+    vi.stubGlobal("URL", {
+      createObjectURL: () => "blob:test",
+      revokeObjectURL: () => {},
+    });
+    vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(function () {
+      telechargements.push(this.download);
+    });
+    render(<FileAttente reglages={REGLAGES_DEFAUT} />);
+
+    fireEvent.click(await screen.findByRole("button", { name: "Exporter en CSV" }));
+    expect(await screen.findByText(/2 fiche\(s\) exportée\(s\) en 2 fichier\(s\) CSV/)).toBeTruthy();
+    expect(telechargements).toEqual(
+      expect.arrayContaining([
+        expect.stringMatching(/fiches-terrain-YUL-.*\.csv$/),
+        expect.stringMatching(/fiches-terrain-YMX-.*\.csv$/),
+      ])
+    );
+
   });
 });

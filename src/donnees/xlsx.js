@@ -10,22 +10,33 @@
  * geste d'export. Il reste précaché par le service worker (voir vite.config).
  */
 import { tableau } from "./csv.js";
+import { CHAMPS } from "../fiche/schema.js";
 
 export const TYPE_XLSX =
   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 
 export async function classeur(fiches, reglages = {}) {
   const { default: ExcelJS } = await import("exceljs");
-  const { entetes, lignes } = tableau(fiches, reglages);
+  const { entetes, lignes, codes } = tableau(fiches, reglages);
+  const colonnesNumeriques = new Set(CHAMPS.filter((c) => c.type === "nombre").map((c) => c.code));
   const wb = new ExcelJS.Workbook();
   const feuille = wb.addWorksheet("Fiches terrain");
   feuille.addRow(entetes);
-  lignes.forEach((l) => feuille.addRow(l));
+  lignes.forEach((ligne) =>
+    feuille.addRow(
+      ligne.map((valeur, index) => {
+        if (!colonnesNumeriques.has(codes[index]) || typeof valeur !== "string") return valeur;
+        if (!/^-?\d+(?:[.,]\d+)?$/.test(valeur.trim())) return valeur;
+        return Number(valeur.replace(",", "."));
+      })
+    )
+  );
   feuille.getRow(1).font = { bold: true };
   feuille.views = [{ state: "frozen", ySplit: 1 }];
   entetes.forEach((e, i) => {
     const largeurs = [e.length, ...lignes.map((l) => String(l[i] ?? "").length)];
     feuille.getColumn(i + 1).width = Math.min(40, Math.max(10, ...largeurs) + 2);
+    if (colonnesNumeriques.has(codes[i])) feuille.getColumn(i + 1).numFmt = "0.###############";
   });
   const octets = await wb.xlsx.writeBuffer();
   return new Blob([octets], { type: TYPE_XLSX });
@@ -54,15 +65,24 @@ export function telechargerBlob(blob, nom) {
  * « telechargement » ou « annule » — l'écran dit alors la vérité à l'usager.
  */
 export async function partager(blob, nom) {
-  const fichier = new File([blob], nom, { type: blob.type });
+  return partagerFichiers([{ blob, nom }]);
+}
+
+export async function partagerFichiers(fichiers) {
+  const fichiersSysteme = fichiers.map(
+    ({ blob, nom }) => new File([blob], nom, { type: blob.type })
+  );
   if (
     typeof navigator !== "undefined" &&
     typeof navigator.share === "function" &&
     typeof navigator.canShare === "function" &&
-    navigator.canShare({ files: [fichier] })
+    navigator.canShare({ files: fichiersSysteme })
   ) {
     try {
-      await navigator.share({ files: [fichier], title: nom });
+      await navigator.share({
+        files: fichiersSysteme,
+        title: fichiersSysteme.map((f) => f.name).join(", "),
+      });
       return "partage";
     } catch (e) {
       // Fermer la feuille de partage n'est pas une panne.
@@ -70,6 +90,6 @@ export async function partager(blob, nom) {
       // Toute autre erreur : on retombe sur le téléchargement.
     }
   }
-  telechargerBlob(blob, nom);
+  fichiers.forEach(({ blob, nom }) => telechargerBlob(blob, nom));
   return "telechargement";
 }

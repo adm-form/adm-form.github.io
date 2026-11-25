@@ -31,6 +31,7 @@ const ONGLETS = [
 export default function App() {
   const [page, setPage] = useState("fiche");
   const [ficheEnEdition, setFicheEnEdition] = useState(null);
+  const [photos, setPhotos] = useState([]);
   const [reglages, setReglages] = useState(() => lireReglages());
   const [points, setPoints] = useState(() => referentiel.lire());
   const [attente, setAttente] = useState(0);
@@ -184,6 +185,8 @@ export default function App() {
             enLigne={enLigne}
             envoiEnCours={envoiEnCours}
             dernierMessage={dernierMessage}
+            photos={photos}
+            surPhotos={setPhotos}
             surEnvoi={envoyerManuellement}
             surModification={(fiche) => {
               setFicheEnEdition(fiche);

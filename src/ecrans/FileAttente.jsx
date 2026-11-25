@@ -15,6 +15,8 @@ import * as fileAttente from "../donnees/file.js";
 import { resume } from "../fiche/regles.js";
 import { csv, nomDuFichier, repartirParAeroport, telecharger } from "../donnees/csv.js";
 import { classeur, nomXlsx, partagerFichiers, telechargerBlob } from "../donnees/xlsx.js";
+import { recadrerPhoto } from "../donnees/photos.js";
+import PhotosBordereau from "./PhotosBordereau.jsx";
 import { estRelie } from "../reglages.js";
 
 const BOUTON = "cible px-4 rounded-xl font-semibold bg-teal-700 text-white active:bg-teal-800";
@@ -90,6 +92,8 @@ export default function FileAttente({
   enLigne,
   envoiEnCours,
   dernierMessage,
+  photos = [],
+  surPhotos,
   surEnvoi,
   surModification,
   surChangement,
@@ -153,28 +157,40 @@ export default function FileAttente({
 
   // Excel (.xlsx) fabriqué dans le navigateur, puis téléchargé ou partagé.
   const exporterXlsx = async (partageAuSysteme) => {
-    if (!fiches.length) return;
+    if (!fiches.length && !(partageAuSysteme && photos.length)) return;
     try {
-      const groupes = repartirParAeroport(fiches);
+      const groupes = fiches.length ? repartirParAeroport(fiches) : [];
       const maintenant = new Date();
-      const fichiers = await Promise.all(
+      const fichiersExcel = await Promise.all(
         groupes.map(async ({ aeroport, fiches: groupe }) => {
           const nom = nomXlsx(nomDuFichier(maintenant, aeroport));
           return { blob: await classeur(groupe, reglages), nom };
         })
       );
       if (partageAuSysteme) {
-        const r = await partagerFichiers(fichiers);
+        const fichiersPhotos = await Promise.all(
+          photos.map(async ({ source, limites, nom }) => ({
+            blob: await recadrerPhoto(source, limites),
+            nom,
+          }))
+        );
+        const r = await partagerFichiers([...fichiersExcel, ...fichiersPhotos]);
         if (r === "annule") return;
+        const detailFichiers = [
+          fichiersExcel.length ? `${fichiersExcel.length} fichier(s) Excel` : "",
+          photos.length ? `${photos.length} photo(s)` : "",
+        ]
+          .filter(Boolean)
+          .join(" et ");
         setAvis(
           r === "partage"
-            ? `${fiches.length} fiche(s) partagée(s) en ${fichiers.length} fichier(s) Excel.`
-            : `${fichiers.length} fichier(s) Excel téléchargé(s) (le partage n'est pas offert ici).`
+            ? `Fichiers transmis à la feuille de partage : ${detailFichiers}.`
+            : `Fichiers téléchargés : ${detailFichiers} (le partage n'est pas offert ici).`
         );
       } else {
-        fichiers.forEach(({ blob, nom }) => telechargerBlob(blob, nom));
+        fichiersExcel.forEach(({ blob, nom }) => telechargerBlob(blob, nom));
         setAvis(
-          `${fiches.length} fiche(s) exportée(s) en ${fichiers.length} fichier(s) Excel (${groupes
+          `${fiches.length} fiche(s) exportée(s) en ${fichiersExcel.length} fichier(s) Excel (${groupes
             .map((g) => g.aeroport)
             .join(", ")}).`
         );
@@ -198,6 +214,7 @@ export default function FileAttente({
 
   return (
     <div className="pb-24">
+      <PhotosBordereau photos={photos} surPhotos={surPhotos} />
       <div className="rounded-2xl bg-white border border-slate-200 p-4 mb-4">
         <p className="text-sm text-slate-700">
           {fiches.length
@@ -234,7 +251,12 @@ export default function FileAttente({
           <button type="button" className={BOUTON_PALE} onClick={() => exporterXlsx(false)} disabled={!fiches.length}>
             Exporter en Excel
           </button>
-          <button type="button" className={BOUTON_PALE} onClick={() => exporterXlsx(true)} disabled={!fiches.length}>
+          <button
+            type="button"
+            className={BOUTON_PALE}
+            onClick={() => exporterXlsx(true)}
+            disabled={!fiches.length && !photos.length}
+          >
             Partager
           </button>
           <button

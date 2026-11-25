@@ -62,10 +62,10 @@ describe("le partage", () => {
     expect(await partager(new Blob(["x"]), "f.xlsx")).toBe("annule");
   });
 
-  it("partage ensemble les fichiers de chaque aéroport", async () => {
+  it("partage ensemble les fichiers Excel et les photos", async () => {
     let partage;
     vi.stubGlobal("navigator", {
-      canShare: ({ files }) => files.length === 2,
+      canShare: ({ files }) => files.length === 3,
       share: async (contenu) => {
         partage = contenu;
       },
@@ -73,8 +73,13 @@ describe("le partage", () => {
     const r = await partagerFichiers([
       { blob: new Blob(["yul"], { type: TYPE_XLSX }), nom: "YUL.xlsx" },
       { blob: new Blob(["ymx"], { type: TYPE_XLSX }), nom: "YMX.xlsx" },
+      { blob: new Blob(["photo"], { type: "image/jpeg" }), nom: "bordereau-YUL.jpg" },
     ]);
     expect(r).toBe("partage");
-    expect(partage.files.map((f) => f.name)).toEqual(["YUL.xlsx", "YMX.xlsx"]);
+    expect(partage.files.map((f) => f.name)).toEqual([
+      "YUL.xlsx",
+      "YMX.xlsx",
+      "bordereau-YUL.jpg",
+    ]);
   });
 });

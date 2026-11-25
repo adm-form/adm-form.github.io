@@ -341,6 +341,13 @@ describe("l'écran des points", () => {
 });
 
 describe("l'export de la file d'attente", () => {
+  it("propose les trois catégories de photos de bordereau", () => {
+    render(<FileAttente reglages={REGLAGES_DEFAUT} surPhotos={() => {}} />);
+    expect(screen.getByLabelText("Photo bordereau YUL")).toBeTruthy();
+    expect(screen.getByLabelText("Bordereau YUL-B1B")).toBeTruthy();
+    expect(screen.getByLabelText("Bordereau YMX")).toBeTruthy();
+  });
+
   it("télécharge un fichier CSV distinct pour YUL et YMX", async () => {
     await fileAttente.ajouter(fileAttente.ficheNeuve({ aeroport: "YUL", point: "B1" }));
     await fileAttente.ajouter(fileAttente.ficheNeuve({ aeroport: "YMX", point: "P1B" }));
@@ -353,7 +360,7 @@ describe("l'export de la file d'attente", () => {
     vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(function () {
       telechargements.push(this.download);
     });
-    render(<FileAttente reglages={REGLAGES_DEFAUT} />);
+    render(<FileAttente reglages={REGLAGES_DEFAUT} surPhotos={() => {}} />);
 
     fireEvent.click(await screen.findByRole("button", { name: "Exporter en CSV" }));
     expect(await screen.findByText(/2 fiche\(s\) exportée\(s\) en 2 fichier\(s\) CSV/)).toBeTruthy();

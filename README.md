@@ -19,7 +19,7 @@ npm run dev      # http://localhost:5174/
 Les trois autres commandes :
 
 ```bash
-npm test         # 124 essais
+npm test         # 142 essais
 npm run build    # produit dist/ (des fichiers statiques, à héberger n'importe où)
 npm run icones   # refait les icônes de l'application installée
 ```
@@ -44,6 +44,9 @@ npm run icones   # refait les icônes de l'application installée
 - **La file d'attente** garde tout ce qui est saisi, montre ce qui est parti et
   ce qui attend, et sait **exporter en CSV** (séparateur `;`, UTF-8, ouvrable
   directement dans Excel) si le SharePoint n'est pas encore relié.
+- Dans **Envois**, ajouter plusieurs photos de bordereau YUL, YUL-B1B ou YMX.
+  L'application estime le contour du papier, affiche un aperçu et permet
+  d'ajuster les quatre côtés du recadrage.
 
 ---
 
@@ -207,6 +210,10 @@ de l'application. Les fiches saisies ne sont pas touchées par une mise à jour.
 dans la tablette, sans réseau) ou **Partager** (feuille de partage de la
 tablette : courriel, Teams, OneDrive… avec le fichier joint ; si la tablette
 ne l'offre pas, le fichier est téléchargé à la place).
+Les photos ajoutées dans cet écran sont recadrées et jointes avec les fichiers
+Excel via **Partager**. Elles ne sont pas téléversées directement dans
+SharePoint; **Envoyer maintenant** envoie uniquement les lignes du classeur.
+Les photos restent en mémoire jusqu'à la fermeture de l'application.
 Les exports sont séparés par aéroport (un fichier YUL et/ou YMX selon les
 fiches présentes). Le CSV utilise la virgule comme séparateur décimal; dans le
 classeur Excel, les mesures restent numériques et leur séparateur suit les

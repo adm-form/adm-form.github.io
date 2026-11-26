@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { detecterBordereau } from "../src/donnees/photos.js";
+import { nomPhoto } from "../src/ecrans/PhotosBordereau.jsx";
 
 function image(width, height, couleur = [35, 40, 45]) {
   const data = new Uint8ClampedArray(width * height * 4);
@@ -59,5 +60,12 @@ describe("la détection du bordereau", () => {
     expect(limites.y).toBeCloseTo(0.1333, 2);
     expect(limites.largeur).toBeCloseTo(0.7, 2);
     expect(limites.hauteur).toBeCloseTo(0.7333, 2);
+  });
+});
+
+describe("le nom des photos", () => {
+  it("utilise uniquement l’aéroport, la date et un numéro lisible", () => {
+    expect(nomPhoto("bordereau-YMX", "20261126T154201", 1))
+      .toBe("bordereau-YMX-20261126T154201-01.jpg");
   });
 });

@@ -7,11 +7,8 @@ const TYPES = [
   { titre: "Bordereau YMX", nom: "bordereau-YMX" },
 ];
 
-let numeroPhoto = 0;
-
-function identifiantPhoto() {
-  numeroPhoto += 1;
-  return `${Date.now().toString(36)}-${numeroPhoto}`;
+export function nomPhoto(type, date, numero) {
+  return `${type}-${date}-${String(numero).padStart(2, "0")}.jpg`;
 }
 
 function Photo({ photo, surLimites, surRetrait }) {
@@ -187,19 +184,25 @@ export default function PhotosBordereau({ photos, surPhotos }) {
       try {
         const resultat = await analyserPhoto(fichier);
         const date = new Date().toISOString().replace(/[-:.]/g, "").slice(0, 15);
-        const id = identifiantPhoto();
-        surPhotos((courants) => [
-          ...courants,
-          {
-            id,
-            nom: `${type.nom}-${date}-${id}.jpg`,
-            source: resultat.source,
-            sourceUrl: resultat.sourceUrl,
-            limites: resultat.limites,
-            coins: resultat.coins,
-            detecte: resultat.detecte,
-          },
-        ]);
+        surPhotos((courants) => {
+          const numero = courants.filter((photo) =>
+            photo.nom.startsWith(`${type.nom}-`)
+          ).length + 1;
+          const id = `${type.nom}-${Date.now()}-${numero}`;
+          const nom = nomPhoto(type.nom, date, numero);
+          return [
+            ...courants,
+            {
+              id,
+              nom,
+              source: resultat.source,
+              sourceUrl: resultat.sourceUrl,
+              limites: resultat.limites,
+              coins: resultat.coins,
+              detecte: resultat.detecte,
+            },
+          ];
+        });
         ajoutes += 1;
       } catch (e) {
         erreurs.push(`Impossible de traiter « ${fichier.name} » : ${e.message}`);

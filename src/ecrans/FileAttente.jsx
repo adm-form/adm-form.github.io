@@ -169,8 +169,8 @@ export default function FileAttente({
       );
       if (partageAuSysteme) {
         const fichiersPhotos = await Promise.all(
-          photos.map(async ({ source, limites, nom }) => ({
-            blob: await recadrerPhoto(source, limites),
+          photos.map(async ({ source, limites, coins, nom }) => ({
+            blob: await recadrerPhoto(source, coins || limites),
             nom,
           }))
         );

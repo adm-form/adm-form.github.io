@@ -44,4 +44,20 @@ describe("la détection du bordereau", () => {
     expect(limites.x).toBeCloseTo(0.14, 1);
     expect(limites.y).toBeCloseTo(0.13, 1);
   });
+
+  it("réduit le cadre à la limite exacte au lieu d’ajouter une marge", () => {
+    const photo = image(200, 150);
+    for (let y = 20; y < 130; y++) {
+      for (let x = 30; x < 170; x++) {
+        photo.data.set([245, 245, 245, 255], (y * photo.width + x) * 4);
+      }
+    }
+
+    const limites = detecterBordereau(photo);
+
+    expect(limites.x).toBeCloseTo(0.15, 2);
+    expect(limites.y).toBeCloseTo(0.1333, 2);
+    expect(limites.largeur).toBeCloseTo(0.7, 2);
+    expect(limites.hauteur).toBeCloseTo(0.7333, 2);
+  });
 });

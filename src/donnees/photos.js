@@ -47,8 +47,8 @@ export function detecterBordereau(imageData) {
     const distanceFond = Math.hypot(r - fond[0], g - fond[1], b - fond[2]);
     const clair = (r + g + b) / 3;
     const clairFond = (fond[0] + fond[1] + fond[2]) / 3;
-    const seuil = Math.max(42, Math.min(110, ecartFond * 0.7 + 35));
-    return distanceFond > seuil && Math.abs(clair - clairFond) > 28;
+    const seuil = Math.max(58, Math.min(125, ecartFond * 0.8 + 45));
+    return distanceFond > seuil && Math.abs(clair - clairFond) > 35;
   };
 
   const papier = new Uint8Array(taille);
@@ -114,12 +114,10 @@ export function detecterBordereau(imageData) {
     return null;
   }
 
-  const margeX = largeurDetectee * 0.015;
-  const margeY = hauteurDetectee * 0.015;
-  const x = Math.max(0, plusGrandGauche - margeX);
-  const y = Math.max(0, plusGrandHaut - margeY);
-  const limiteDroite = Math.min(width, plusGrandDroite + margeX);
-  const limiteBas = Math.min(height, plusGrandBas + margeY);
+  const x = plusGrandGauche;
+  const y = plusGrandHaut;
+  const limiteDroite = plusGrandDroite;
+  const limiteBas = plusGrandBas;
 
   return {
     x: x / width,
@@ -146,41 +144,131 @@ export async function analyserPhoto(file) {
     const imageData = contexte.getImageData(0, 0, canvas.width, canvas.height);
     const detection = detecterBordereau(imageData);
     const limites = detection || { x: 0, y: 0, largeur: 1, hauteur: 1 };
-    return { source, limites, detecte: Boolean(detection) };
+    const coins = {
+      hautGauche: { x: limites.x, y: limites.y },
+      hautDroite: { x: limites.x + limites.largeur, y: limites.y },
+      basDroite: { x: limites.x + limites.largeur, y: limites.y + limites.hauteur },
+      basGauche: { x: limites.x, y: limites.y + limites.hauteur },
+    };
+    return {
+      source,
+      sourceUrl: URL.createObjectURL(file),
+      limites,
+      coins,
+      detecte: Boolean(detection),
+    };
   } catch (e) {
     source.close();
     throw e;
   }
 }
 
-export async function recadrerPhoto(source, limites) {
-  const x = Math.min(0.99, Math.max(0, limites.x));
-  const y = Math.min(0.99, Math.max(0, limites.y));
-  const droite = Math.min(1, Math.max(x + 0.01, limites.x + limites.largeur));
-  const bas = Math.min(1, Math.max(y + 0.01, limites.y + limites.hauteur));
-  const sourceX = Math.round(x * source.width);
-  const sourceY = Math.round(y * source.height);
-  const sourceLargeur = Math.max(1, Math.round((droite - x) * source.width));
-  const sourceHauteur = Math.max(1, Math.round((bas - y) * source.height));
-  const echelle = Math.min(1, LIMITE_SORTIE / Math.max(sourceLargeur, sourceHauteur));
+function limitesVersCoins(limites) {
+  return {
+    hautGauche: { x: limites.x, y: limites.y },
+    hautDroite: { x: limites.x + limites.largeur, y: limites.y },
+    basDroite: { x: limites.x + limites.largeur, y: limites.y + limites.hauteur },
+    basGauche: { x: limites.x, y: limites.y + limites.hauteur },
+  };
+}
+
+function resoudre3(mat) {
+  for (let colonne = 0; colonne < 3; colonne++) {
+    let pivot = colonne;
+    for (let ligne = colonne + 1; ligne < 3; ligne++) {
+      if (Math.abs(mat[ligne][colonne]) > Math.abs(mat[pivot][colonne])) pivot = ligne;
+    }
+    if (Math.abs(mat[pivot][colonne]) < 1e-8) return null;
+    [mat[colonne], mat[pivot]] = [mat[pivot], mat[colonne]];
+    const diviseur = mat[colonne][colonne];
+    for (let c = 0; c < 4; c++) mat[colonne][c] /= diviseur;
+    for (let ligne = 0; ligne < 3; ligne++) {
+      if (ligne === colonne) continue;
+      const facteur = mat[ligne][colonne];
+      for (let c = 0; c < 4; c++) mat[ligne][c] -= facteur * mat[colonne][c];
+    }
+  }
+  return [mat[0][3], mat[1][3], mat[2][3]];
+}
+
+function affineVersDestination(source, destination) {
+  const [s0, s1, s2] = source;
+  const [d0, d1, d2] = destination;
+  const a = resoudre3([
+    [s0.x, s0.y, 1, d0.x],
+    [s1.x, s1.y, 1, d1.x],
+    [s2.x, s2.y, 1, d2.x],
+  ]);
+  const b = resoudre3([
+    [s0.x, s0.y, 1, d0.y],
+    [s1.x, s1.y, 1, d1.y],
+    [s2.x, s2.y, 1, d2.y],
+  ]);
+  if (!a || !b) return null;
+  return [a[0], b[0], a[1], b[1], a[2], b[2]];
+}
+
+function dessinerTriangle(contexte, source, sourcePoints, destinationPoints) {
+  const transform = affineVersDestination(sourcePoints, destinationPoints);
+  if (!transform) return;
+  contexte.save();
+  contexte.beginPath();
+  contexte.moveTo(destinationPoints[0].x, destinationPoints[0].y);
+  contexte.lineTo(destinationPoints[1].x, destinationPoints[1].y);
+  contexte.lineTo(destinationPoints[2].x, destinationPoints[2].y);
+  contexte.closePath();
+  contexte.clip();
+  contexte.setTransform(...transform);
+  contexte.drawImage(source, 0, 0);
+  contexte.restore();
+}
+
+export async function recadrerPhoto(source, limitesOuCoins) {
+  const coins = limitesOuCoins.hautGauche
+    ? limitesOuCoins
+    : limitesVersCoins(limitesOuCoins);
+  const points = ["hautGauche", "hautDroite", "basDroite", "basGauche"].map((nom) => ({
+    x: Math.max(0, Math.min(1, coins[nom].x)) * source.width,
+    y: Math.max(0, Math.min(1, coins[nom].y)) * source.height,
+  }));
+  const [hg, hd, bd, bg] = points;
+  const largeur = Math.max(
+    1,
+    Math.round((Math.hypot(hd.x - hg.x, hd.y - hg.y) + Math.hypot(bd.x - bg.x, bd.y - bg.y)) / 2)
+  );
+  const hauteur = Math.max(
+    1,
+    Math.round((Math.hypot(bg.x - hg.x, bg.y - hg.y) + Math.hypot(bd.x - hd.x, bd.y - hd.y)) / 2)
+  );
+  const echelle = Math.min(1, LIMITE_SORTIE / Math.max(largeur, hauteur));
   const canvas = document.createElement("canvas");
-  canvas.width = Math.max(1, Math.round(sourceLargeur * echelle));
-  canvas.height = Math.max(1, Math.round(sourceHauteur * echelle));
+  canvas.width = Math.max(1, Math.round(largeur * echelle));
+  canvas.height = Math.max(1, Math.round(hauteur * echelle));
   const contexte = canvas.getContext("2d");
   if (!contexte) throw new Error("Impossible de recadrer cette photo.");
   contexte.fillStyle = "#fff";
   contexte.fillRect(0, 0, canvas.width, canvas.height);
-  contexte.drawImage(
-    source,
-    sourceX,
-    sourceY,
-    sourceLargeur,
-    sourceHauteur,
-    0,
-    0,
-    canvas.width,
-    canvas.height
-  );
+  const destination = [
+    { x: 0, y: 0 },
+    { x: canvas.width, y: 0 },
+    { x: canvas.width, y: canvas.height },
+    { x: 0, y: canvas.height },
+  ];
+  const destSource = points.map((point) => ({
+    x: point.x,
+    y: point.y,
+  }));
+  const echelleDestination = [
+    destination[0],
+    destination[1],
+    destination[2],
+    destination[3],
+  ];
+  // Les triangles redressent les quatre coins sans conserver le fond en dehors.
+  dessinerTriangle(contexte, source, [destSource[0], destSource[1], destSource[2]],
+    [echelleDestination[0], echelleDestination[1], echelleDestination[2]]);
+  dessinerTriangle(contexte, source, [destSource[0], destSource[2], destSource[3]],
+    [echelleDestination[0], echelleDestination[2], echelleDestination[3]]);
   return new Promise((resolve, reject) => {
     canvas.toBlob(
       (blob) => (blob ? resolve(blob) : reject(new Error("Impossible de préparer cette photo."))),

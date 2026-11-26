@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { analyserPhoto, recadrerPhoto } from "../donnees/photos.js";
 
 const TYPES = [
@@ -18,6 +18,8 @@ function Photo({ photo, surLimites, surRetrait }) {
   const [url, setUrl] = useState("");
   const [enCours, setEnCours] = useState(false);
   const [erreur, setErreur] = useState("");
+  const svgRef = useRef(null);
+  const coinActif = useRef("");
 
   useEffect(() => {
     let active = true;
@@ -25,7 +27,7 @@ function Photo({ photo, surLimites, surRetrait }) {
     setEnCours(true);
     setUrl("");
     setErreur("");
-    recadrerPhoto(photo.source, photo.limites)
+    recadrerPhoto(photo.source, photo.coins || photo.limites)
       .then((blob) => {
         if (!active) return;
         urlLocale = URL.createObjectURL(blob);
@@ -41,47 +43,52 @@ function Photo({ photo, surLimites, surRetrait }) {
       active = false;
       if (urlLocale) URL.revokeObjectURL(urlLocale);
     };
-  }, [photo.source, photo.limites]);
+  }, [photo.source, photo.coins, photo.limites]);
 
-  const changer = (bord, valeur) => {
-    const l = photo.limites;
-    const min = 0.08;
-    const gauche = bord === "gauche" ? Math.min(valeur, l.x + l.largeur - min) : l.x;
-    const haut = bord === "haut" ? Math.min(valeur, l.y + l.hauteur - min) : l.y;
-    const droite =
-      bord === "droite"
-        ? Math.max(valeur, l.x + min)
-        : l.x + l.largeur;
-    const bas =
-      bord === "bas"
-        ? Math.max(valeur, l.y + min)
-        : l.y + l.hauteur;
+  const coins = photo.coins || {
+    hautGauche: { x: photo.limites.x, y: photo.limites.y },
+    hautDroite: { x: photo.limites.x + photo.limites.largeur, y: photo.limites.y },
+    basDroite: {
+      x: photo.limites.x + photo.limites.largeur,
+      y: photo.limites.y + photo.limites.hauteur,
+    },
+    basGauche: { x: photo.limites.x, y: photo.limites.y + photo.limites.hauteur },
+  };
+
+  const changerCoin = (nom, evenement) => {
+    const svg = svgRef.current;
+    if (!svg) return;
+    const rect = svg.getBoundingClientRect();
+    const x = Math.max(0, Math.min(1, (evenement.clientX - rect.left) / rect.width));
+    const y = Math.max(0, Math.min(1, (evenement.clientY - rect.top) / rect.height));
     surLimites(photo.id, {
-      x: gauche,
-      y: haut,
-      largeur: Math.min(1, droite) - gauche,
-      hauteur: Math.min(1, bas) - haut,
+      ...coins,
+      [nom]: { x, y },
     });
   };
 
-  const curseur = (titre, bord, valeur) => (
-    <label className="block text-xs text-slate-600">
-      <span className="flex justify-between">
-        <span>{titre}</span>
-        <span>{Math.round(valeur * 100)} %</span>
-      </span>
-      <input
-        className="w-full"
-        type="range"
-        min="0"
-        max="100"
-        step="1"
-        value={Math.round(valeur * 100)}
-        onChange={(e) => changer(bord, Number(e.target.value) / 100)}
-        aria-label={`${titre} — ${photo.nom}`}
-      />
-    </label>
-  );
+  const demarrerDeplacement = (nom, evenement) => {
+    evenement.preventDefault();
+    coinActif.current = nom;
+    evenement.currentTarget.setPointerCapture(evenement.pointerId);
+  };
+
+  const deplacerCoin = (evenement) => {
+    if (!coinActif.current) return;
+    changerCoin(coinActif.current, evenement);
+  };
+
+  const terminersDeplacement = (evenement) => {
+    coinActif.current = "";
+    if (evenement.currentTarget.hasPointerCapture?.(evenement.pointerId)) {
+      evenement.currentTarget.releasePointerCapture(evenement.pointerId);
+    }
+  };
+
+  const nomsCoins = ["hautGauche", "hautDroite", "basDroite", "basGauche"];
+  const points = nomsCoins
+    .map((nom) => `${coins[nom].x * 1000},${coins[nom].y * 1000}`)
+    .join(" ");
 
   return (
     <li className="rounded-xl border border-slate-200 p-3">
@@ -96,30 +103,70 @@ function Photo({ photo, surLimites, surRetrait }) {
           Retirer
         </button>
       </div>
+      {photo.sourceUrl ? (
+        <div className="relative mt-2 overflow-hidden rounded-lg bg-slate-100">
+          <img
+            className="block w-full"
+            src={photo.sourceUrl}
+            alt={`Photo originale de ${photo.nom}`}
+          />
+          <svg
+            ref={svgRef}
+            className="absolute inset-0 h-full w-full touch-none"
+            viewBox="0 0 1000 1000"
+            preserveAspectRatio="none"
+            aria-label={`Coins du bordereau — ${photo.nom}`}
+            onPointerMove={deplacerCoin}
+          >
+            <polygon
+              points={points}
+              fill="rgba(13, 148, 136, 0.08)"
+              stroke="#0d9488"
+              strokeWidth="8"
+              vectorEffect="non-scaling-stroke"
+            />
+            {nomsCoins.map((nom) => (
+              <circle
+                key={nom}
+                cx={coins[nom].x * 1000}
+                cy={coins[nom].y * 1000}
+                r="24"
+                fill="#fff"
+                stroke="#0d9488"
+                strokeWidth="8"
+                vectorEffect="non-scaling-stroke"
+                role="button"
+                tabIndex="0"
+                aria-label={`Coin ${nom}`}
+                onPointerDown={(e) => demarrerDeplacement(nom, e)}
+                onPointerUp={terminersDeplacement}
+                onPointerCancel={terminersDeplacement}
+              />
+            ))}
+          </svg>
+        </div>
+      ) : null}
       {url ? (
-        <img
-          className="mt-2 max-h-64 w-full rounded-lg bg-slate-100 object-contain"
-          src={url}
-          alt={`Aperçu recadré de ${photo.nom}`}
-        />
+        <div className="mt-2">
+          <p className="mb-1 text-xs text-slate-500">Aperçu du recadrage</p>
+          <img
+            className="max-h-64 w-full rounded-lg bg-slate-100 object-contain"
+            src={url}
+            alt={`Aperçu recadré de ${photo.nom}`}
+          />
+        </div>
       ) : null}
       {enCours ? <p className="mt-2 text-xs text-slate-500">Préparation de l’aperçu…</p> : null}
       {erreur ? <p className="mt-2 text-xs text-rose-700">{erreur}</p> : null}
       {!photo.detecte ? (
         <p className="mt-2 text-xs text-amber-800">
-          Bordereau non détecté automatiquement. Ajustez le cadre avant le partage.
+          Bordereau non détecté automatiquement. Déplacez les quatre coins avant le partage.
         </p>
       ) : (
         <p className="mt-2 text-xs text-slate-500">
-          Vérifiez l’aperçu et ajustez le cadre si nécessaire.
+          Déplacez les quatre coins pour ajuster exactement les bords de la feuille.
         </p>
       )}
-      <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2">
-        {curseur("Gauche", "gauche", photo.limites.x)}
-        {curseur("Droite", "droite", photo.limites.x + photo.limites.largeur)}
-        {curseur("Haut", "haut", photo.limites.y)}
-        {curseur("Bas", "bas", photo.limites.y + photo.limites.hauteur)}
-      </div>
     </li>
   );
 }
@@ -147,7 +194,9 @@ export default function PhotosBordereau({ photos, surPhotos }) {
             id,
             nom: `${type.nom}-${date}-${id}.jpg`,
             source: resultat.source,
+            sourceUrl: resultat.sourceUrl,
             limites: resultat.limites,
+            coins: resultat.coins,
             detecte: resultat.detecte,
           },
         ]);
@@ -161,13 +210,14 @@ export default function PhotosBordereau({ photos, surPhotos }) {
     setAnalyseEnCours(false);
   };
 
-  const changerLimites = (id, limites) => {
+  const changerLimites = (id, coins) => {
     surPhotos((courantes) =>
-      courantes.map((photo) => (photo.id === id ? { ...photo, limites } : photo))
+      courantes.map((photo) => (photo.id === id ? { ...photo, coins } : photo))
     );
   };
 
   const retirer = (photo) => {
+    if (photo.sourceUrl) URL.revokeObjectURL(photo.sourceUrl);
     photo.source.close();
     surPhotos((courantes) => courantes.filter((courante) => courante.id !== photo.id));
   };

@@ -4,70 +4,122 @@ const LIMITE_SORTIE = 2500;
 export function detecterBordereau(imageData) {
   const { data, width, height } = imageData;
   const taille = width * height;
-  const papier = new Uint8Array(taille);
-  let depart = -1;
-  let distanceDepart = Infinity;
-  const centreX = width / 2;
-  const centreY = height / 2;
+  const echantillons = [];
 
-  for (let i = 0; i < taille; i++) {
+  for (const [fractionX, fractionY] of [
+    [0.04, 0.04],
+    [0.96, 0.04],
+    [0.04, 0.96],
+    [0.96, 0.96],
+  ]) {
+    const x = Math.floor(width * fractionX);
+    const y = Math.floor(height * fractionY);
+    const rayon = Math.max(1, Math.round(Math.min(width, height) * 0.02));
+    let r = 0;
+    let g = 0;
+    let b = 0;
+    let nombre = 0;
+    for (let yy = Math.max(0, y - rayon); yy < Math.min(height, y + rayon); yy++) {
+      for (let xx = Math.max(0, x - rayon); xx < Math.min(width, x + rayon); xx++) {
+        const index = (yy * width + xx) * 4;
+        r += data[index];
+        g += data[index + 1];
+        b += data[index + 2];
+        nombre++;
+      }
+    }
+    echantillons.push([r / nombre, g / nombre, b / nombre]);
+  }
+
+  const fond = [
+    echantillons.reduce((somme, couleur) => somme + couleur[0], 0) / 4,
+    echantillons.reduce((somme, couleur) => somme + couleur[1], 0) / 4,
+    echantillons.reduce((somme, couleur) => somme + couleur[2], 0) / 4,
+  ];
+  const ecartFond = Math.max(...echantillons.map((couleur) =>
+    Math.hypot(couleur[0] - fond[0], couleur[1] - fond[1], couleur[2] - fond[2])
+  ));
+
+  const candidat = (i) => {
     const r = data[i * 4];
     const g = data[i * 4 + 1];
     const b = data[i * 4 + 2];
+    const distanceFond = Math.hypot(r - fond[0], g - fond[1], b - fond[2]);
     const clair = (r + g + b) / 3;
-    const ecartCouleur = Math.max(r, g, b) - Math.min(r, g, b);
-    if (clair < 160 || ecartCouleur > 95) continue;
+    const clairFond = (fond[0] + fond[1] + fond[2]) / 3;
+    const seuil = Math.max(42, Math.min(110, ecartFond * 0.7 + 35));
+    return distanceFond > seuil && Math.abs(clair - clairFond) > 28;
+  };
 
-    papier[i] = 1;
-    const x = i % width;
-    const y = Math.floor(i / width);
-    const distance = (x - centreX) ** 2 + (y - centreY) ** 2;
-    if (distance < distanceDepart) {
-      depart = i;
-      distanceDepart = distance;
-    }
+  const papier = new Uint8Array(taille);
+  for (let i = 0; i < taille; i++) {
+    if (candidat(i)) papier[i] = 1;
   }
-
-  if (depart < 0) return null;
 
   const file = new Int32Array(taille);
-  let debut = 0;
-  let fin = 0;
-  let gauche = width;
-  let haut = height;
-  let droite = 0;
-  let bas = 0;
-  file[fin++] = depart;
-  papier[depart] = 0;
+  let plusGrandGauche = width;
+  let plusGrandHaut = height;
+  let plusGrandDroite = 0;
+  let plusGrandBas = 0;
+  let plusGrandNombre = 0;
 
-  while (debut < fin) {
-    const index = file[debut++];
-    const x = index % width;
-    const y = Math.floor(index / width);
-    gauche = Math.min(gauche, x);
-    haut = Math.min(haut, y);
-    droite = Math.max(droite, x + 1);
-    bas = Math.max(bas, y + 1);
+  for (let depart = 0; depart < taille; depart++) {
+    if (!papier[depart]) continue;
+    let debut = 0;
+    let fin = 0;
+    let gauche = width;
+    let haut = height;
+    let droite = 0;
+    let bas = 0;
+    file[fin++] = depart;
+    papier[depart] = 0;
 
-    for (const voisin of [index - 1, index + 1, index - width, index + width]) {
-      if (voisin < 0 || voisin >= taille || !papier[voisin]) continue;
-      const vx = voisin % width;
-      const vy = Math.floor(voisin / width);
-      if (Math.abs(vx - x) + Math.abs(vy - y) !== 1) continue;
-      papier[voisin] = 0;
-      file[fin++] = voisin;
+    while (debut < fin) {
+      const index = file[debut++];
+      const x = index % width;
+      const y = Math.floor(index / width);
+      gauche = Math.min(gauche, x);
+      haut = Math.min(haut, y);
+      droite = Math.max(droite, x + 1);
+      bas = Math.max(bas, y + 1);
+
+      for (const voisin of [index - 1, index + 1, index - width, index + width]) {
+        if (voisin < 0 || voisin >= taille || !papier[voisin]) continue;
+        const vx = voisin % width;
+        const vy = Math.floor(voisin / width);
+        if (Math.abs(vx - x) + Math.abs(vy - y) !== 1) continue;
+        papier[voisin] = 0;
+        file[fin++] = voisin;
+      }
+    }
+
+    if (fin > plusGrandNombre) {
+      plusGrandNombre = fin;
+      plusGrandGauche = gauche;
+      plusGrandHaut = haut;
+      plusGrandDroite = droite;
+      plusGrandBas = bas;
     }
   }
 
-  const aire = (droite - gauche) * (bas - haut);
-  if (fin < taille * 0.08 || aire > taille * 0.96) return null;
+  if (
+    plusGrandNombre < taille * 0.08 ||
+    (plusGrandDroite - plusGrandGauche) * (plusGrandBas - plusGrandHaut) > taille * 0.96
+  ) return null;
 
-  const margeX = (droite - gauche) * 0.015;
-  const margeY = (bas - haut) * 0.015;
-  const x = Math.max(0, gauche - margeX);
-  const y = Math.max(0, haut - margeY);
-  const limiteDroite = Math.min(width, droite + margeX);
-  const limiteBas = Math.min(height, bas + margeY);
+  const largeurDetectee = plusGrandDroite - plusGrandGauche;
+  const hauteurDetectee = plusGrandBas - plusGrandHaut;
+  if (largeurDetectee < width * 0.15 || hauteurDetectee < height * 0.15) return null;
+  if (Math.max(largeurDetectee, hauteurDetectee) / Math.min(largeurDetectee, hauteurDetectee) > 6) {
+    return null;
+  }
+
+  const margeX = largeurDetectee * 0.015;
+  const margeY = hauteurDetectee * 0.015;
+  const x = Math.max(0, plusGrandGauche - margeX);
+  const y = Math.max(0, plusGrandHaut - margeY);
+  const limiteDroite = Math.min(width, plusGrandDroite + margeX);
+  const limiteBas = Math.min(height, plusGrandBas + margeY);
 
   return {
     x: x / width,

@@ -195,6 +195,7 @@ export default function PhotosBordereau({ photos, surPhotos }) {
             {
               id,
               nom,
+              type: type.nom,
               source: resultat.source,
               sourceUrl: resultat.sourceUrl,
               limites: resultat.limites,
@@ -229,9 +230,9 @@ export default function PhotosBordereau({ photos, surPhotos }) {
     <section className="rounded-2xl border border-slate-200 bg-white p-4 mb-4">
       <h2 className="font-semibold text-slate-900">Photos de bordereau</h2>
       <p className="mt-1 text-sm text-slate-600">
-        Ajoutez une ou plusieurs photos. Elles seront jointes au bouton « Partager » avec les
-        fichiers Excel; « Envoyer maintenant » n’envoie que les lignes du classeur. Les photos
-        restent dans cette session de l’application.
+        Ajoutez une ou plusieurs photos. Chaque type de bordereau sera joint au bouton « Partager »
+        dans un PDF de plusieurs pages. « Envoyer maintenant » n’envoie que les lignes du classeur.
+        Les photos restent dans cette session de l’application.
       </p>
       <div className="mt-3 grid gap-2 sm:grid-cols-3">
         {TYPES.map((type) => (

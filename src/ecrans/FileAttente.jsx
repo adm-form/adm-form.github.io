@@ -15,7 +15,11 @@ import * as fileAttente from "../donnees/file.js";
 import { resume } from "../fiche/regles.js";
 import { csv, nomDuFichier, repartirParAeroport, telecharger } from "../donnees/csv.js";
 import { classeur, nomXlsx, partagerFichiers, telechargerBlob } from "../donnees/xlsx.js";
-import { recadrerPhoto } from "../donnees/photos.js";
+import {
+  creerPdfBordereaux,
+  grouperPhotosParType,
+  nomPdf,
+} from "../donnees/photos.js";
 import PhotosBordereau from "./PhotosBordereau.jsx";
 import { estRelie } from "../reglages.js";
 
@@ -168,17 +172,18 @@ export default function FileAttente({
         })
       );
       if (partageAuSysteme) {
-        const fichiersPhotos = await Promise.all(
-          photos.map(async ({ source, limites, coins, nom }) => ({
-            blob: await recadrerPhoto(source, coins || limites),
-            nom,
-          }))
-        );
-        const r = await partagerFichiers([...fichiersExcel, ...fichiersPhotos]);
+        const fichiersPdf = [];
+        for (const [type, photosDuType] of grouperPhotosParType(photos)) {
+          fichiersPdf.push({
+            blob: await creerPdfBordereaux(photosDuType),
+            nom: nomPdf(type, photosDuType),
+          });
+        }
+        const r = await partagerFichiers([...fichiersExcel, ...fichiersPdf]);
         if (r === "annule") return;
         const detailFichiers = [
           fichiersExcel.length ? `${fichiersExcel.length} fichier(s) Excel` : "",
-          photos.length ? `${photos.length} photo(s)` : "",
+          fichiersPdf.length ? `${fichiersPdf.length} fichier(s) PDF` : "",
         ]
           .filter(Boolean)
           .join(" et ");

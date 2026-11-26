@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { detecterBordereau } from "../src/donnees/photos.js";
+import {
+  detecterBordereau,
+  grouperPhotosParType,
+  nomPdf,
+} from "../src/donnees/photos.js";
 import { nomPhoto } from "../src/ecrans/PhotosBordereau.jsx";
 
 function image(width, height, couleur = [35, 40, 45]) {
@@ -67,5 +71,24 @@ describe("le nom des photos", () => {
   it("utilise uniquement l’aéroport, la date et un numéro lisible", () => {
     expect(nomPhoto("bordereau-YMX", "20261126T154201", 1))
       .toBe("bordereau-YMX-20261126T154201-01.jpg");
+  });
+});
+
+describe("les PDF de bordereau", () => {
+  it("groupe les photos du même type dans un même fichier", () => {
+    const groupes = grouperPhotosParType([
+      { nom: "bordereau-YMX-20261126T154201-01.jpg", type: "bordereau-YMX" },
+      { nom: "bordereau-YMX-20261126T154201-02.jpg", type: "bordereau-YMX" },
+      { nom: "bordereau-YUL-20261126T154201-01.jpg", type: "bordereau-YUL" },
+    ]);
+
+    expect(groupes.get("bordereau-YMX")).toHaveLength(2);
+    expect(groupes.get("bordereau-YUL")).toHaveLength(1);
+  });
+
+  it("nomme le PDF avec son type et sa date", () => {
+    expect(nomPdf("bordereau-YMX", [
+      { nom: "bordereau-YMX-20261126T154201-01.jpg" },
+    ])).toBe("bordereau-YMX-20261126T154201.pdf");
   });
 });

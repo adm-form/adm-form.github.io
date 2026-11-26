@@ -277,3 +277,76 @@ export async function recadrerPhoto(source, limitesOuCoins) {
     );
   });
 }
+
+export function grouperPhotosParType(photos) {
+  const groupes = new Map();
+  for (const photo of photos) {
+    const type = photo.type
+      || (photo.nom.startsWith("bordereau-YUL-B1B-")
+        ? "bordereau-YUL-B1B"
+        : photo.nom.startsWith("bordereau-YUL-")
+          ? "bordereau-YUL"
+          : photo.nom.startsWith("bordereau-YMX-")
+            ? "bordereau-YMX"
+            : "bordereau");
+    if (!groupes.has(type)) groupes.set(type, []);
+    groupes.get(type).push(photo);
+  }
+  return groupes;
+}
+
+function dateDansNom(photo) {
+  const correspondance = photo.nom.match(/-(\d{8}T\d{6})-/);
+  return correspondance ? correspondance[1] : "";
+}
+
+export function nomPdf(type, photos) {
+  const date = photos.length ? dateDansNom(photos[0]) : "";
+  return date ? `${type}-${date}.pdf` : `${type}.pdf`;
+}
+
+function blobVersDataUrl(blob) {
+  return new Promise((resolve, reject) => {
+    const lecteur = new FileReader();
+    lecteur.onload = () => resolve(String(lecteur.result));
+    lecteur.onerror = () => reject(new Error("Impossible de lire une image à partager."));
+    lecteur.readAsDataURL(blob);
+  });
+}
+
+export async function creerPdfBordereaux(photos) {
+  const [{ jsPDF }] = await Promise.all([import("jspdf")]);
+  const pdf = new jsPDF({
+    orientation: "portrait",
+    unit: "mm",
+    format: "a4",
+  });
+  const largeurA4 = 210;
+  const hauteurA4 = 297;
+  const marge = 10;
+
+  for (let index = 0; index < photos.length; index++) {
+    if (index > 0) pdf.addPage("a4", "portrait");
+    const photo = photos[index];
+    const jpeg = await recadrerPhoto(photo.source, photo.coins || photo.limites);
+    const dataUrl = await blobVersDataUrl(jpeg);
+    const image = await createImageBitmap(jpeg);
+    try {
+      const largeurDisponible = largeurA4 - marge * 2;
+      const hauteurDisponible = hauteurA4 - marge * 2;
+      const echelle = Math.min(
+        largeurDisponible / (image.width / 96 * 25.4),
+        hauteurDisponible / (image.height / 96 * 25.4)
+      );
+      const largeurImage = (image.width / 96 * 25.4) * echelle;
+      const hauteurImage = (image.height / 96 * 25.4) * echelle;
+      const gauche = (largeurA4 - largeurImage) / 2;
+      const haut = (hauteurA4 - hauteurImage) / 2;
+      pdf.addImage(dataUrl, "JPEG", gauche, haut, largeurImage, hauteurImage, undefined, "FAST");
+    } finally {
+      image.close();
+    }
+  }
+
+  return pdf.output("blob");
+}
